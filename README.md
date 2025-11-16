@@ -1,0 +1,128 @@
+# TextSkanner / Dagboksskanner 📘
+
+En robust fullstack-app för att skanna dagboks-sidor (handskriven text) och göra dem digitala.
+
+Appen är uppdelad i:
+
+- **backend/** – Express + TypeScript, robust struktur, API för OCR (`/api/ocr`)
+- **frontend/** – Next.js 14 + TypeScript, enkel UI för att skicka bilder/URL:er till backend
+
+Just nu använder backend en **mockad OCR** (låtsas-svar) så att struktur, API och frontend kan testas utan extern OCR-tjänst. Senare kan riktig OCR kopplas på (t.ex. Gemini, Tesseract, etc).
+
+---
+
+## Struktur
+
+```txt
+TextSkanner/
+├── backend/
+│   ├── package.json
+│   ├── tsconfig.json
+│   ├── .env.example
+│   └── src/
+│       ├── server.ts
+│       ├── app.ts
+│       ├── routes/
+│       │   ├── index.ts
+│       │   └── ocr.routes.ts
+│       ├── controllers/
+│       │   ├── health.controller.ts
+│       │   └── ocr.controller.ts
+│       └── middleware/
+│           ├── errorHandler.ts
+│           └── notFound.ts
+│
+└── frontend/
+    ├── package.json
+    ├── tsconfig.json
+    └── src/
+        ├── app/
+        │   ├── page.tsx          # startsida
+        │   └── diary/
+        │       └── page.tsx      # Dagboksskanner-sida
+        ├── services/
+        │   ├── apiClient.ts
+        │   └── ocrApi.ts
+        └── features/
+            └── diary/
+                └── DiaryScanner.tsx
+```
+
+## Kom igång
+
+1. **Klona repot**
+   ```bash
+   git clone https://github.com/Mats6102hamberg/TextSkanner.git
+   cd TextSkanner
+   ```
+
+2. **Starta backend**
+   ```bash
+   cd backend
+   cp .env.example .env   # eller skapa .env manuellt
+   npm install
+   npm run dev
+   ```
+
+   Backend kör nu på:
+   - http://localhost:4000
+   - Healthcheck: http://localhost:4000/api/health
+   - OCR-endpoint (mock): POST http://localhost:4000/api/ocr
+
+3. **Starta frontend**
+   Öppna en ny terminal:
+   ```bash
+   cd TextSkanner/frontend
+   npm install
+   npm run dev
+   ```
+
+   Next.js startar t.ex. på:
+   - http://localhost:3000 eller http://localhost:3001 (om 3000 är upptagen)
+
+## Användning
+
+- **Startsida:**
+  - http://localhost:3000 (eller 3001) visar en enkel välkomstsida.
+- **Dagboksskanner:**
+  - http://localhost:3000/diary (eller 3001/diary)
+  - Här kan du:
+    - Ladda upp en bild av en dagbokssida
+    - Klicka på "Kör OCR"
+    - Frontend anropar `/api/ocr` i backend
+    - Backend svarar med mockad OCR-text:
+      ```json
+      {
+        "text": "Det här är en test-text från OCR-mock...",
+        "source": "imageUrl",
+        "confidence": 0.42
+      }
+      ```
+
+Senare kan denna mock ersättas med riktig OCR.
+
+## Teknikstack
+
+**Backend**
+- Node.js + TypeScript
+- Express
+- Zod (validering)
+- CORS, .env, tydlig felhantering
+
+**Frontend**
+- Next.js 14 (App-router)
+- React 18
+- TypeScript
+- Enkel service-lager (`apiClient.ts`, `ocrApi.ts`)
+
+## Nästa steg / TODO
+
+- [ ] Koppla riktig OCR-motor (t.ex. AI-tjänst eller Tesseract)
+- [ ] Stöd för filuppladdning (inte bara bild-URL)
+- [ ] Förbättrat UI (layout, responsiv design, styling)
+- [ ] Spara OCR-resultat lokalt eller i databas (om juridik tillåter)
+- [ ] Exportera dagbokstext till PDF/Word
+
+## Licens
+
+Den här koden är licensierad under MIT-licensen. Se `LICENSE` för detaljer.
