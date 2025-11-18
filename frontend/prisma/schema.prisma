@@ -10,6 +10,8 @@ generator client {
 model DiaryEntry {
   id        String   @id @default(cuid())
   text      String?
+  originalText   String?
+  translatedText String?
   imageUrl  String?
   createdAt DateTime @default(now())
 }

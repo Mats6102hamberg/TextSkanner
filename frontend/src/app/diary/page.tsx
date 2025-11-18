@@ -1,13 +1,23 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { DiaryList } from "@/features/diary/DiaryList";
 
 type DiaryEntry = {
   id: string;
-  text: string;
   createdAt: string;
-  imageUrl?: string | null;
+  originalText: string;
+  translatedText?: string | null;
 };
+
+function normalizeEntry(entry: any): DiaryEntry {
+  return {
+    id: entry.id,
+    createdAt: entry.createdAt,
+    originalText: entry.originalText ?? entry.text ?? "",
+    translatedText: entry.translatedText ?? null
+  };
+}
 
 type LanguageOption = {
   code: string;
@@ -47,8 +57,8 @@ export default function Page() {
       try {
         const res = await fetch("/api/diary", { cache: "no-store" });
         if (!res.ok) return;
-        const data: DiaryEntry[] = await res.json();
-        setEntries(data);
+        const data = await res.json();
+        setEntries(data.map(normalizeEntry));
       } catch (err) {
         console.error("Kunde inte ladda dagboksinlägg:", err);
       }
@@ -111,7 +121,7 @@ export default function Page() {
         console.error(await saveRes.text());
         setError("Texten lästes in, men kunde inte sparas i databasen.");
       } else {
-        const newEntry: DiaryEntry = await saveRes.json();
+        const newEntry = normalizeEntry(await saveRes.json());
         setEntries((prev) => [newEntry, ...prev]);
         setSuccess("Inlägget är sparat i din dagbok.");
       }
@@ -217,22 +227,8 @@ export default function Page() {
                 de upp här.
               </p>
             ) : (
-              <div className="flex flex-col gap-3 max-h-[460px] overflow-y-auto pr-1">
-                {entries.map((entry) => (
-                  <article
-                    key={entry.id}
-                    className="rounded-xl border border-slate-800 bg-slate-950/60 px-3 py-3 hover:border-indigo-500/70 transition-colors"
-                  >
-                    <div className="flex items-center justify-between gap-2 mb-1.5">
-                      <span className="text-xs font-medium text-slate-300">
-                        {formatDate(entry.createdAt)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-slate-200 whitespace-pre-line">
-                      {entry.text.length > 220 ? entry.text.slice(0, 220) + "…" : entry.text}
-                    </p>
-                  </article>
-                ))}
+              <div className="max-h-[460px] overflow-y-auto pr-1">
+                <DiaryList entries={entries} />
               </div>
             )}
           </section>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient, Prisma } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -44,6 +44,42 @@ export async function POST(req: NextRequest) {
     console.error("POST /api/diary error:", error);
     return NextResponse.json(
       { error: "Kunde inte spara dagboksinlägg" },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  const { searchParams } = new URL(req.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json(
+      { error: "Ange id för inlägget som ska tas bort" },
+      { status: 400 }
+    );
+  }
+
+  try {
+    await prisma.diaryEntry.delete({
+      where: { id }
+    });
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    if (
+      error instanceof Prisma.PrismaClientKnownRequestError &&
+      error.code === "P2025"
+    ) {
+      return NextResponse.json(
+        { error: "Inlägget hittades inte" },
+        { status: 404 }
+      );
+    }
+
+    console.error("DELETE /api/diary error:", error);
+    return NextResponse.json(
+      { error: "Kunde inte ta bort dagboksinlägg" },
       { status: 500 }
     );
   }
