@@ -9,6 +9,23 @@ type DiaryEntry = {
   imageUrl?: string | null;
 };
 
+type LanguageOption = {
+  code: string;
+  label: string;
+};
+
+const LANGUAGE_OPTIONS: LanguageOption[] = [
+  { code: "auto", label: "Auto – försök känna av" },
+  { code: "sv", label: "Svenska" },
+  { code: "en", label: "Engelska" },
+  { code: "fr", label: "Franska" },
+  { code: "es", label: "Spanska" },
+  { code: "de", label: "Tyska" },
+  { code: "da", label: "Danska" },
+  { code: "no", label: "Norska" },
+  { code: "fi", label: "Finska" }
+];
+
 function formatDate(value: string) {
   return new Date(value).toLocaleString("sv-SE", {
     dateStyle: "short",
@@ -23,6 +40,7 @@ export default function Page() {
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [language, setLanguage] = useState<string>("auto");
 
   useEffect(() => {
     const loadEntries = async () => {
@@ -60,6 +78,7 @@ export default function Page() {
     try {
       const formData = new FormData();
       formData.append("file", file);
+      formData.append("language", language);
 
       const ocrRes = await fetch("/api/ocr", {
         method: "POST",
@@ -119,7 +138,7 @@ export default function Page() {
       <main className="flex-1 px-4 md:px-6 py-6">
         <div className="max-w-6xl mx-auto grid gap-6 md:grid-cols-[minmax(0,1.4fr),minmax(0,1fr)]">
           <section className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4 md:p-6 shadow-lg shadow-black/40 flex flex-col gap-4">
-            <div className="flex flex-col md:flex-row md:items-center gap-3">
+            <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4">
               <label className="inline-flex items-center gap-2 text-sm font-medium">
                 <span className="px-3 py-2 rounded-md border border-slate-600 bg-slate-800 cursor-pointer hover:bg-slate-700">
                   Välj fil
@@ -134,6 +153,21 @@ export default function Page() {
                   {file ? file.name : "Ingen fil har valts"}
                 </span>
               </label>
+
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-slate-300 whitespace-nowrap">Språk:</span>
+                <select
+                  value={language}
+                  onChange={(e) => setLanguage(e.target.value)}
+                  className="bg-slate-950 border border-slate-700 rounded-md px-2 py-1 text-xs md:text-sm text-slate-100"
+                >
+                  {LANGUAGE_OPTIONS.map((opt) => (
+                    <option key={opt.code} value={opt.code}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
 
               <button
                 onClick={handleScan}
