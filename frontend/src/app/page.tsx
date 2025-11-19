@@ -169,94 +169,31 @@ export default function HomePage() {
 
       {error && <p style={{ color: "red", marginBottom: "1rem" }}>{error}</p>}
 
-      {editedText && (
-        <div
-          style={{
-            padding: "20px",
-            borderRadius: 12,
-            background: "#f3f4f6",
-            marginBottom: "1.5rem"
-          }}
-        >
-          <h2 style={{ marginTop: 0 }}>OCR-resultat:</h2>
-
-          <div style={{ marginBottom: "1rem", display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <button
-              type="button"
-              onClick={handleCopy}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                background: "#111827",
-                color: "white"
-              }}
-            >
-              Kopiera text
-            </button>
-
-            <button
-              type="button"
-              onClick={handleClean}
-              disabled={loadingClean}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                background: "#059669",
-                color: "white"
-              }}
-            >
-              {loadingClean ? "Städar..." : "Städa/formattera text"}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDownloadPdf}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                background: "#4b5563",
-                color: "white"
-              }}
-            >
-              Ladda ner som PDF
-            </button>
-
-            <button
-              type="button"
-              onClick={handleSendEmail}
-              style={{
-                padding: "6px 14px",
-                borderRadius: 8,
-                border: "none",
-                cursor: "pointer",
-                background: "#db2777",
-                color: "white"
-              }}
-            >
-              Skicka som e-post
-            </button>
+      {(rawText || editedText) && (
+        <div className="space-y-6 mt-6">
+          <div>
+            <h3 className="text-lg font-semibold text-neutral-200">
+              OCR ORIGINAL (språk upptäcks automatiskt)
+            </h3>
+            <textarea
+              value={rawText ?? ""}
+              onChange={(e) => setRawText(e.target.value)}
+              rows={8}
+              className="w-full rounded-md bg-neutral-900 border border-neutral-700 p-3 text-sm text-neutral-100"
+              placeholder="Här visas texten som OCR hittade…"
+            />
           </div>
 
-          <textarea
-            value={editedText}
-            onChange={(e) => setEditedText(e.target.value)}
-            rows={18}
-            style={{
-              width: "100%",
-              borderRadius: 8,
-              border: "1px solid #d1d5db",
-              padding: "10px",
-              fontFamily: "monospace",
-              fontSize: "0.9rem",
-              whiteSpace: "pre-wrap"
-            }}
-          />
+          <div>
+            <h3 className="text-lg font-semibold text-neutral-200">SVENSK ÖVERSÄTTNING</h3>
+            <textarea
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              rows={8}
+              className="w-full rounded-md bg-neutral-900 border border-neutral-700 p-3 text-sm text-neutral-100"
+              placeholder="Här visas den svenska versionen…"
+            />
+          </div>
         </div>
       )}
 
