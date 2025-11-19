@@ -27,18 +27,14 @@ export async function POST(req: NextRequest) {
         ? "Försök först avgöra vilket språk texten är på. Läs sedan av all text så noggrant som möjligt."
         : `Texten i bilden är på språket med kod "${language}". Läs av all text så noggrant som möjligt.`;
 
-    const translationInstruction = `När texten är avläst ska du översätta allt till svenska. Om den redan är på svenska skriver du den som den är. Behåll radbrytningar där det är naturligt och använd modern, tydlig svenska.`;
-
     const prompt = `
 
 ${sourceLanguageInstruction}
 
-${translationInstruction}
-
 Regler:
 - Skriv bara själva texten från bilden.
 - Ta inte med egna kommentarer, tolkningar eller rubriker.
-- Svara endast med texten, på svenska.
+- Svara endast med texten exakt som den står i originalet (översätt inte).
 `;
 
     const completion = await openai.chat.completions.create({
@@ -59,30 +55,37 @@ Regler:
       ]
     });
 
-    const originalText = completion.choices[0]?.message?.content?.trim() ?? "";
+    const ocrText = completion.choices[0]?.message?.content?.trim() ?? "";
 
-    if (!originalText) {
+    if (!ocrText) {
       throw new Error("OCR-svaret innehöll ingen text");
     }
 
-    const translated = await openai.chat.completions.create({
-      model: "gpt-4o-mini",
-      messages: [
-        {
-          role: "system",
-          content: "Du är en översättare. Översätt all inkommande text till svenska."
-        },
-        {
-          role: "user",
-          content: originalText
-        }
-      ]
-    });
+    let swedishText = "";
 
-    const swedishText = translated.choices[0]?.message?.content?.trim() ?? originalText;
+    try {
+      const translated = await openai.chat.completions.create({
+        model: "gpt-4o-mini",
+        messages: [
+          {
+            role: "system",
+            content: "Du är en översättare. Översätt all inkommande text till svenska."
+          },
+          {
+            role: "user",
+            content: ocrText
+          }
+        ]
+      });
+
+      swedishText = translated.choices[0]?.message?.content?.trim() ?? "";
+    } catch (translationError) {
+      console.error("Fel vid översättning:", translationError);
+      swedishText = "";
+    }
 
     return NextResponse.json({
-      original: originalText,
+      original: ocrText,
       translated: swedishText
     });
   } catch (error) {

@@ -68,13 +68,18 @@ export default function HomePage() {
       const data = await res.json();
 
       if (!res.ok) {
-        throw new Error(data.error || "Fel vid OCR.");
+        setError("Kunde inte skanna dagbokssidan.");
+        return;
       }
 
-      const text = typeof data.text === "string" ? data.text : String(data.text);
-      setRawText(text);
-      setEditedText(text);
-      addToHistory(text);
+      const original = typeof data.original === "string" ? data.original : data.text ?? "";
+      const translated = typeof data.translated === "string" ? data.translated : "";
+      const finalRaw = original ?? "";
+      const finalEdited = translated || finalRaw || "";
+
+      setRawText(finalRaw);
+      setEditedText(finalEdited);
+      addToHistory(finalEdited || finalRaw);
     } catch (err: any) {
       setError(err.message || "Något gick fel vid OCR.");
     } finally {
