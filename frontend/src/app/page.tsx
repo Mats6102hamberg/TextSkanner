@@ -9,6 +9,13 @@ type HistoryItem = {
   text: string;
 };
 
+type DiaryEntry = {
+  id: string;
+  createdAt: string;
+  originalText: string;
+  translatedText?: string | null;
+};
+
 export default function HomePage() {
   const [file, setFile] = useState<File | null>(null);
   const [loadingOcr, setLoadingOcr] = useState(false);
@@ -17,6 +24,7 @@ export default function HomePage() {
   const [editedText, setEditedText] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [entries, setEntries] = useState<DiaryEntry[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -34,6 +42,29 @@ export default function HomePage() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem("dagbok-history", JSON.stringify(history));
   }, [history]);
+
+  useEffect(() => {
+    async function fetchEntries() {
+      try {
+        const res = await fetch("/api/diary", { cache: "no-store" });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!Array.isArray(data)) return;
+        setEntries(
+          data.map((item) => ({
+            id: item.id,
+            createdAt: item.createdAt,
+            originalText: typeof item.text === "string" ? item.text : "",
+            translatedText: typeof item.translatedText === "string" ? item.translatedText : null
+          }))
+        );
+      } catch (err) {
+        console.error("Kunde inte hämta sparade skanningar:", err);
+      }
+    }
+
+    fetchEntries();
+  }, []);
 
   function addToHistory(text: string) {
     const item: HistoryItem = {
@@ -142,6 +173,32 @@ export default function HomePage() {
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
   }
 
+  function handleUseText(original: string, translated?: string | null) {
+    setRawText(original);
+    setEditedText(translated || original || "");
+  }
+
+  async function handleDeleteEntry(id: string) {
+    const confirmed = confirm("Vill du ta bort den här skanningen?");
+    if (!confirmed) return;
+
+    try {
+      const res = await fetch(`/api/diary?id=${id}`, {
+        method: "DELETE"
+      });
+
+      if (!res.ok) {
+        alert("Kunde inte ta bort skanningen. Försök igen.");
+        return;
+      }
+
+      setEntries((prev) => prev.filter((entry) => entry.id !== id));
+    } catch (err) {
+      console.error(err);
+      alert("Ett fel uppstod vid borttagning.");
+    }
+  }
+
   return (
     <div style={{ maxWidth: 900, margin: "40px auto", fontFamily: "system-ui, sans-serif" }}>
       <h1 style={{ fontSize: "2.5rem", marginBottom: "1.5rem" }}>Dagboksskanner</h1>
@@ -198,9 +255,106 @@ export default function HomePage() {
               className="w-full rounded-md bg-neutral-900 border border-neutral-700 p-3 text-sm text-neutral-100"
               placeholder="Här visas den svenska versionen…"
             />
+
+            <div className="flex flex-wrap gap-3 mt-4 text-sm">
+              <button
+                type="button"
+                onClick={handleCopy}
+                className="px-4 py-2 rounded-md bg-neutral-800 text-white hover:bg-neutral-700 transition"
+              >
+                Kopiera text
+              </button>
+              <button
+                type="button"
+                onClick={handleClean}
+                disabled={loadingClean}
+                className="px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                {loadingClean ? "Städar..." : "Städa/formattera text"}
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadPdf}
+                className="px-4 py-2 rounded-md bg-slate-600 text-white hover:bg-slate-500 transition"
+              >
+                Ladda ner som PDF
+              </button>
+              <button
+                type="button"
+                onClick={handleSendEmail}
+                className="px-4 py-2 rounded-md bg-pink-600 text-white hover:bg-pink-500 transition"
+              >
+                Skicka som e-post
+              </button>
+            </div>
           </div>
         </div>
       )}
+
+      <div style={{ marginTop: "2rem" }}>
+        <h3>Skanningar sparade i databasen</h3>
+        {entries.length === 0 ? (
+          <p style={{ color: "#6b7280", marginTop: "0.5rem" }}>
+            Inga sparade skanningar ännu. Använd sidan "Dagbok" för att spara nya poster.
+          </p>
+        ) : (
+          <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+            {entries.map((entry) => (
+              <li
+                key={entry.id}
+                style={{
+                  border: "1px solid #e5e7eb",
+                  borderRadius: 12,
+                  padding: "0.75rem 1rem",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "flex-start",
+                  gap: "0.75rem"
+                }}
+              >
+                <button
+                  onClick={() => handleUseText(entry.originalText, entry.translatedText)}
+                  style={{
+                    flex: 1,
+                    background: "none",
+                    border: "none",
+                    textAlign: "left",
+                    padding: 0,
+                    cursor: "pointer"
+                  }}
+                >
+                  <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
+                    {new Date(entry.createdAt).toLocaleString("sv-SE")}
+                  </div>
+                  <div style={{ fontWeight: 500 }}>
+                    {entry.originalText.slice(0, 140)}
+                    {entry.originalText.length > 140 ? "…" : ""}
+                  </div>
+                  {entry.translatedText && (
+                    <div style={{ fontSize: "0.85rem", color: "#4b5563", marginTop: "0.25rem" }}>
+                      {entry.translatedText.slice(0, 160)}
+                      {entry.translatedText.length > 160 ? "…" : ""}
+                    </div>
+                  )}
+                </button>
+
+                <button
+                  onClick={() => handleDeleteEntry(entry.id)}
+                  title="Ta bort den här skanningen"
+                  style={{
+                    border: "none",
+                    background: "none",
+                    cursor: "pointer",
+                    fontSize: "1.2rem"
+                  }}
+                >
+                  🗑
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {history.length > 0 && (
         <div>
@@ -212,10 +366,7 @@ export default function HomePage() {
                 –{" "}
                 <span
                   style={{ cursor: "pointer", textDecoration: "underline" }}
-                  onClick={() => {
-                    setRawText(item.text);
-                    setEditedText(item.text);
-                  }}
+                  onClick={() => handleUseText(item.text)}
                 >
                   ladda in
                 </span>
