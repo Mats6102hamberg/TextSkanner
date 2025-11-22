@@ -22,10 +22,11 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const text = typeof body.text === "string" ? body.text.trim() : "";
+    const originalText = typeof body.originalText === "string" ? body.originalText.trim() : "";
+    const translatedText = typeof body.translatedText === "string" ? body.translatedText.trim() : null;
     const imageUrl = typeof body.imageUrl === "string" ? body.imageUrl : null;
 
-    if (!text) {
+    if (!originalText) {
       return NextResponse.json(
         { error: "Text saknas" },
         { status: 400 }
@@ -34,7 +35,8 @@ export async function POST(req: NextRequest) {
 
     const entry = await prisma.diaryEntry.create({
       data: {
-        text,
+        originalText,
+        translatedText,
         imageUrl
       }
     });

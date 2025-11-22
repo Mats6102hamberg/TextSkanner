@@ -100,19 +100,21 @@ export default function Page() {
       }
 
       const ocrData = await ocrRes.json();
-      const text: string = ocrData.text || ocrData.result || ocrData.content || "";
+      const originalText: string = ocrData.original || ocrData.text || ocrData.result || ocrData.content || "";
+      const translatedText: string = ocrData.translated || "";
 
-      if (!text) {
+      if (!originalText) {
         throw new Error("Inget textresultat från OCR");
       }
 
-      setOcrText(text);
+      setOcrText(translatedText || originalText);
 
       const saveRes = await fetch("/api/diary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          text,
+          originalText,
+          translatedText: translatedText || null,
           imageUrl: null
         })
       });
