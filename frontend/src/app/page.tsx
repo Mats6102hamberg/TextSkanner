@@ -203,18 +203,24 @@ export default function HomePage() {
     const confirmed = confirm("Vill du ta bort den här skanningen?");
     if (!confirmed) return;
 
+    // Optimistisk uppdatering - ta bort från UI direkt
+    const prevEntries = entries;
+    setEntries((prev) => prev.filter((entry) => entry.id !== id));
+
     try {
-      const res = await fetch(`/api/diary?id=${id}`, {
+      const res = await fetch(`/api/diary/${id}`, {
         method: "DELETE"
       });
 
       if (!res.ok) {
+        // Återställ vid fel
+        setEntries(prevEntries);
         alert("Kunde inte ta bort skanningen. Försök igen.");
         return;
       }
-
-      setEntries((prev) => prev.filter((entry) => entry.id !== id));
     } catch (err) {
+      // Återställ vid fel
+      setEntries(prevEntries);
       console.error(err);
       alert("Ett fel uppstod vid borttagning.");
     }
