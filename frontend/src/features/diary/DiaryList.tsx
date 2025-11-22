@@ -1,69 +1,93 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import React from "react";
+import { useDiaryEntries } from "@/features/diary/hooks/useDiaryEntries";
+import type { DiaryEntry } from "@/types/diary";
+import { deleteDiaryEntry } from "@/services/diaryApi";
 
-type DiaryEntry = {
-  id: string;
-  createdAt: string;
-  originalText: string;
-  translatedText?: string | null;
+type DiaryListProps = {
+  entries?: DiaryEntry[];
+  initialEntries?: DiaryEntry[];
 };
 
-export function DiaryList({ entries }: { entries: DiaryEntry[] }) {
-  const router = useRouter();
+export function DiaryList({ entries: externalEntries, initialEntries }: DiaryListProps) {
+  const { entries, loading, error, setEntries } = useDiaryEntries(
+    externalEntries ?? initialEntries
+  );
 
   async function handleDelete(id: string) {
-    const ok = confirm("Vill du verkligen radera den här skanningen?");
-    if (!ok) return;
+    const prev = entries;
+    setEntries((current) => current.filter((entry) => entry.id !== id));
 
     try {
-      const res = await fetch(`/api/diary/${id}`, {
-        method: "DELETE"
-      });
-
-      if (!res.ok) {
-        alert("Kunde inte radera posten. Försök igen.");
-        return;
-      }
-
-      router.refresh();
+      await deleteDiaryEntry(id);
     } catch (err) {
+      setEntries(prev);
       console.error(err);
-      alert("Ett fel uppstod vid raderingen.");
+      alert("Kunde inte ta bort inlägget, försök igen.");
     }
   }
 
-  return (
-    <div className="space-y-3 mt-6">
-      {entries.map((entry) => (
-        <div
-          key={entry.id}
-          className="flex items-start justify-between rounded-xl border border-neutral-700 bg-neutral-900/70 p-3"
-        >
-          <div className="pr-3">
-            <div className="text-xs text-neutral-400">
-              {new Date(entry.createdAt).toLocaleString("sv-SE")}
-            </div>
-            <div className="text-sm font-medium mb-1">
-              {entry.originalText.slice(0, 80)}
-              {entry.originalText.length > 80 ? "…" : ""}
-            </div>
-            {entry.translatedText && (
-              <div className="text-xs text-neutral-300 line-clamp-2">
-                {entry.translatedText}
-              </div>
-            )}
-          </div>
+  if (loading) {
+    return <p className="text-sm text-muted-foreground">Laddar dagboksinlägg…</p>;
+  }
 
-          <button
-            onClick={() => handleDelete(entry.id)}
-            className="ml-2 text-neutral-400 hover:text-red-400 transition"
-            title="Radera den här skanningen"
-          >
-            🗑
-          </button>
-        </div>
+  if (error) {
+    return (
+      <p className="text-sm text-red-500">
+        Kunde inte hämta dagboksinlägg. Uppdatera sidan eller försök igen senare.
+      </p>
+    );
+  }
+
+  if (!entries.length) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        Inga dagboksinlägg ännu. Skanna något och spara för att se historiken här.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {entries.map((entry) => (
+        <article
+          key={entry.id}
+          className="rounded-lg border border-border bg-card p-3 text-sm"
+        >
+          <div className="flex items-start justify-between gap-2">
+            <div className="space-y-1">
+              <p className="font-medium">{formatDate(entry.createdAt)}</p>
+              <p className="whitespace-pre-wrap text-xs text-muted-foreground">
+                {entry.originalText}
+              </p>
+              {entry.translatedText && (
+                <p className="mt-1 whitespace-pre-wrap text-xs">
+                  <span className="font-semibold">Svensk version:</span>{" "}
+                  {entry.translatedText}
+                </p>
+              )}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => handleDelete(entry.id)}
+              className="text-xs text-red-500 hover:text-red-600"
+              aria-label="Ta bort dagboksinlägg"
+            >
+              🗑
+            </button>
+          </div>
+        </article>
       ))}
     </div>
   );
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  return d.toLocaleString("sv-SE", {
+    dateStyle: "short",
+    timeStyle: "short"
+  });
 }

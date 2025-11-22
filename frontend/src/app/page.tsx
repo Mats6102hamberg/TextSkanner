@@ -25,6 +25,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
+  const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -73,6 +74,23 @@ export default function HomePage() {
       text
     };
     setHistory((prev) => [item, ...prev].slice(0, 10));
+  }
+
+  function handleDeleteHistoryItem(id: string) {
+    setHistory((prev) => {
+      const updated = prev.filter((item) => item.id !== id);
+      if (typeof window !== "undefined") {
+        window.localStorage.setItem("dagbok-history", JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }
+
+  function handleClearHistory() {
+    setHistory([]);
+    if (typeof window !== "undefined") {
+      window.localStorage.removeItem("dagbok-history");
+    }
   }
 
   async function handleScan(e: FormEvent<HTMLFormElement>) {
@@ -171,6 +189,9 @@ export default function HomePage() {
     const subject = encodeURIComponent("Dagboks-OCR " + new Date().toLocaleDateString("sv-SE"));
     const body = encodeURIComponent(editedText);
     window.location.href = `mailto:?subject=${subject}&body=${body}`;
+
+    setEmailFeedback("E-postfönster öppnades. Kontrollera ditt mejlprogram.");
+    setTimeout(() => setEmailFeedback(null), 4000);
   }
 
   function handleUseText(original: string, translated?: string | null) {
@@ -234,9 +255,19 @@ export default function HomePage() {
       {(rawText || editedText) && (
         <div className="space-y-6 mt-6">
           <div>
-            <h3 className="text-lg font-semibold text-neutral-200">
-              OCR ORIGINAL (språk upptäcks automatiskt)
-            </h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold text-neutral-200">
+                OCR ORIGINAL (språk upptäcks automatiskt)
+              </h3>
+              <button
+                type="button"
+                onClick={() => setRawText("")}
+                className="text-red-400 hover:text-red-300 transition"
+                aria-label="Rensa OCR-text"
+              >
+                🗑️
+              </button>
+            </div>
             <textarea
               value={rawText ?? ""}
               onChange={(e) => setRawText(e.target.value)}
@@ -247,7 +278,17 @@ export default function HomePage() {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold text-neutral-200">SVENSK ÖVERSÄTTNING</h3>
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold text-neutral-200">SVENSK ÖVERSÄTTNING</h3>
+              <button
+                type="button"
+                onClick={() => setEditedText("")}
+                className="text-red-400 hover:text-red-300 transition"
+                aria-label="Rensa svensk översättning"
+              >
+                🗑️
+              </button>
+            </div>
             <textarea
               value={editedText}
               onChange={(e) => setEditedText(e.target.value)}
@@ -260,7 +301,16 @@ export default function HomePage() {
               <button
                 type="button"
                 onClick={handleCopy}
-                className="px-4 py-2 rounded-md bg-neutral-800 text-white hover:bg-neutral-700 transition"
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#111827",
+                  color: "#ffffff",
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(17,24,39,0.3)",
+                  fontWeight: 600
+                }}
               >
                 Kopiera text
               </button>
@@ -268,25 +318,68 @@ export default function HomePage() {
                 type="button"
                 onClick={handleClean}
                 disabled={loadingClean}
-                className="px-4 py-2 rounded-md bg-emerald-600 text-white hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: loadingClean ? "#15803d" : "#22c55e",
+                  color: "#0f172a",
+                  cursor: loadingClean ? "not-allowed" : "pointer",
+                  opacity: loadingClean ? 0.8 : 1,
+                  fontWeight: 600
+                }}
               >
                 {loadingClean ? "Städar..." : "Städa/formattera text"}
               </button>
               <button
                 type="button"
                 onClick={handleDownloadPdf}
-                className="px-4 py-2 rounded-md bg-slate-600 text-white hover:bg-slate-500 transition"
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#475569",
+                  color: "#f8fafc",
+                  cursor: "pointer",
+                  fontWeight: 600
+                }}
               >
                 Ladda ner som PDF
               </button>
               <button
                 type="button"
                 onClick={handleSendEmail}
-                className="px-4 py-2 rounded-md bg-pink-600 text-white hover:bg-pink-500 transition"
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: "#db2777",
+                  color: "#fff",
+                  cursor: "pointer",
+                  fontWeight: 600,
+                  boxShadow: "0 4px 16px rgba(219,39,119,0.35)"
+                }}
               >
                 Skicka som e-post
               </button>
             </div>
+
+            {emailFeedback && (
+              <div
+                role="status"
+                style={{
+                  marginTop: "0.75rem",
+                  padding: "0.65rem 0.85rem",
+                  borderRadius: 12,
+                  backgroundColor: "#fdf2f8",
+                  color: "#be185d",
+                  fontSize: "0.9rem",
+                  fontWeight: 500
+                }}
+              >
+                {emailFeedback}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -300,56 +393,32 @@ export default function HomePage() {
         ) : (
           <ul style={{ listStyle: "none", padding: 0, marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
             {entries.map((entry) => (
-              <li
-                key={entry.id}
-                style={{
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 12,
-                  padding: "0.75rem 1rem",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "flex-start",
-                  gap: "0.75rem"
-                }}
-              >
-                <button
-                  onClick={() => handleUseText(entry.originalText, entry.translatedText)}
-                  style={{
-                    flex: 1,
-                    background: "none",
-                    border: "none",
-                    textAlign: "left",
-                    padding: 0,
-                    cursor: "pointer"
-                  }}
-                >
-                  <div style={{ fontSize: "0.8rem", color: "#6b7280" }}>
-                    {new Date(entry.createdAt).toLocaleString("sv-SE")}
-                  </div>
-                  <div style={{ fontWeight: 500 }}>
-                    {entry.originalText.slice(0, 140)}
-                    {entry.originalText.length > 140 ? "…" : ""}
-                  </div>
-                  {entry.translatedText && (
-                    <div style={{ fontSize: "0.85rem", color: "#4b5563", marginTop: "0.25rem" }}>
-                      {entry.translatedText.slice(0, 160)}
-                      {entry.translatedText.length > 160 ? "…" : ""}
-                    </div>
-                  )}
-                </button>
+              <li key={entry.id}>
+                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 p-3 rounded-lg gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleUseText(entry.originalText, entry.translatedText)}
+                    className="flex-1 text-left"
+                  >
+                    <p className="text-gray-300 text-sm truncate">{entry.originalText}</p>
+                    {entry.translatedText && (
+                      <p className="text-gray-400 text-xs truncate mt-1">{entry.translatedText}</p>
+                    )}
+                    <p className="text-gray-500 text-[0.7rem] mt-1">
+                      {new Date(entry.createdAt).toLocaleString("sv-SE")}
+                    </p>
+                  </button>
 
-                <button
-                  onClick={() => handleDeleteEntry(entry.id)}
-                  title="Ta bort den här skanningen"
-                  style={{
-                    border: "none",
-                    background: "none",
-                    cursor: "pointer",
-                    fontSize: "1.2rem"
-                  }}
-                >
-                  🗑
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEntry(entry.id)}
+                    title="Ta bort den här skanningen"
+                    className="text-red-400 hover:text-red-300 transition ml-3"
+                    aria-label="Ta bort skanning"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -359,17 +428,42 @@ export default function HomePage() {
       {history.length > 0 && (
         <div>
           <h3>Tidigare skanningar (lokal historik)</h3>
-          <ul style={{ paddingLeft: "1.2rem" }}>
+          <button
+            type="button"
+            onClick={handleClearHistory}
+            className="text-red-500 hover:text-red-300 text-sm mb-3"
+          >
+            🗑️ Töm historik
+          </button>
+          <ul className="mt-3 space-y-2">
             {history.map((item) => (
-              <li key={item.id} style={{ marginBottom: "0.5rem" }}>
-                <strong>{item.createdAt}</strong>{" "}
-                –{" "}
-                <span
-                  style={{ cursor: "pointer", textDecoration: "underline" }}
-                  onClick={() => handleUseText(item.text)}
-                >
-                  ladda in
-                </span>
+              <li key={item.id}>
+                <div className="flex items-center justify-between bg-neutral-900 border border-neutral-800 rounded-lg p-3 gap-3">
+                  <div className="flex-1 text-sm text-neutral-100">
+                    <div className="text-xs text-neutral-500">
+                      {item.createdAt}
+                    </div>
+                    <p className="mt-1 text-sm text-neutral-200 line-clamp-2">
+                      {item.text}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => handleUseText(item.text)}
+                      className="mt-2 text-xs text-blue-300 hover:text-blue-200 underline"
+                    >
+                      Ladda in text
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteHistoryItem(item.id)}
+                    className="text-red-400 hover:text-red-300 transition ml-2"
+                    aria-label="Ta bort historikpost"
+                  >
+                    🗑️
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
