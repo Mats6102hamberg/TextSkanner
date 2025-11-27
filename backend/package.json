@@ -11,6 +11,7 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
     "express": "^4.19.0",
+    "openai": "^4.75.0",
     "zod": "^3.23.0"
   },
   "devDependencies": {

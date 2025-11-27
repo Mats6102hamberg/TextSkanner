@@ -2,6 +2,51 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { jsPDF } from "jspdf";
+import type { ContractAnalysisResult, ContractRiskLevel } from "@/types/contracts";
+
+const palette = {
+  primary: "#0A3A5E",
+  accent: "#2B89D1",
+  background: "#F7F9FB",
+  text: "#1A1A1A"
+};
+
+const RISK_COLORS: Record<ContractRiskLevel, string> = {
+  low: "#4CAF50",
+  medium: "#FFC107",
+  high: "#D32F2F"
+};
+
+const RISK_LABELS: Record<ContractRiskLevel, string> = {
+  low: "Låg risk",
+  medium: "Medelrisk",
+  high: "Hög risk"
+};
+
+function RiskBadge({
+  level,
+  label
+}: {
+  level: ContractRiskLevel;
+  label?: string;
+}) {
+  return (
+    <span
+      style={{
+        backgroundColor: RISK_COLORS[level],
+        color: "#fff",
+        borderRadius: 999,
+        padding: "0.35rem 0.9rem",
+        fontWeight: 600,
+        fontSize: "0.85rem",
+        textTransform: "uppercase",
+        letterSpacing: "0.03em"
+      }}
+    >
+      {label ?? RISK_LABELS[level]}
+    </span>
+  );
+}
 
 type HistoryItem = {
   id: string;
@@ -26,6 +71,10 @@ export default function HomePage() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [entries, setEntries] = useState<DiaryEntry[]>([]);
   const [emailFeedback, setEmailFeedback] = useState<string | null>(null);
+  const [analysis, setAnalysis] = useState<ContractAnalysisResult | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [openSectionId, setOpenSectionId] = useState<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -128,6 +177,9 @@ export default function HomePage() {
 
       setRawText(finalRaw);
       setEditedText(finalEdited);
+      setAnalysis(null);
+      setAnalysisError(null);
+      setOpenSectionId(null);
       addToHistory(finalEdited || finalRaw);
     } catch (err: any) {
       setError(err.message || "Något gick fel vid OCR.");
@@ -192,6 +244,42 @@ export default function HomePage() {
 
     setEmailFeedback("E-postfönster öppnades. Kontrollera ditt mejlprogram.");
     setTimeout(() => setEmailFeedback(null), 4000);
+  }
+
+  async function handleAnalyzeContract() {
+    if (!editedText.trim()) {
+      setAnalysisError("Lägg till text att analysera först.");
+      return;
+    }
+
+    try {
+      setIsAnalyzing(true);
+      setAnalysisError(null);
+
+      const res = await fetch("/api/contracts/analyze", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rawText: editedText.trim(), language: "sv" })
+      });
+
+      const data: ContractAnalysisResult = await res.json();
+
+      if (!res.ok) {
+        throw new Error((data as any)?.error || "Kunde inte analysera avtalet.");
+      }
+
+      setAnalysis(data);
+      setOpenSectionId(null);
+    } catch (err: any) {
+      setAnalysis(null);
+      setAnalysisError(err?.message || "Kunde inte analysera avtalet just nu.");
+    } finally {
+      setIsAnalyzing(false);
+    }
+  }
+
+  function toggleSection(sectionId: string) {
+    setOpenSectionId((prev) => (prev === sectionId ? null : sectionId));
   }
 
   function handleUseText(original: string, translated?: string | null) {
@@ -368,6 +456,25 @@ export default function HomePage() {
               >
                 Skicka som e-post
               </button>
+              <button
+                type="button"
+                onClick={handleAnalyzeContract}
+                disabled={isAnalyzing || !editedText.trim()}
+                style={{
+                  padding: "10px 18px",
+                  borderRadius: 999,
+                  border: "none",
+                  backgroundColor: palette.primary,
+                  color: "#fff",
+                  cursor:
+                    isAnalyzing || !editedText.trim() ? "not-allowed" : "pointer",
+                  opacity: isAnalyzing || !editedText.trim() ? 0.75 : 1,
+                  fontWeight: 600,
+                  boxShadow: "0 6px 16px rgba(10,58,94,0.35)"
+                }}
+              >
+                {isAnalyzing ? "Analyserar..." : "Analysera avtal (beta)"}
+              </button>
             </div>
 
             {emailFeedback && (
@@ -386,7 +493,24 @@ export default function HomePage() {
                 {emailFeedback}
               </div>
             )}
+
+            {analysisError && (
+              <div
+                style={{
+                  marginTop: "1rem",
+                  padding: "0.85rem 1rem",
+                  borderRadius: 12,
+                  backgroundColor: "#FCE8E6",
+                  color: "#B42318",
+                  fontWeight: 500
+                }}
+              >
+                {analysisError}
+              </div>
+            )}
           </div>
+
+          {renderAnalysisPanel()}
         </div>
       )}
 
@@ -477,4 +601,216 @@ export default function HomePage() {
       )}
     </div>
   );
+
+  function renderAnalysisPanel() {
+    if (!analysis) return null;
+
+    const summaryCards = [
+      { key: "short", title: "Kort sammanfattning", text: analysis.summaries.short },
+      { key: "medium", title: "Mellanlång sammanfattning", text: analysis.summaries.medium },
+      { key: "detailed", title: "Detaljerad analys", text: analysis.summaries.detailed },
+      { key: "explainLike12", title: "Explain like 12", text: analysis.summaries.explainLike12 }
+    ];
+
+    const insightItems = [
+      { title: "Parter", values: analysis.detectedParties },
+      { title: "Datum", values: analysis.detectedDates },
+      { title: "Belopp", values: analysis.detectedAmounts }
+    ].filter((item) => Array.isArray(item.values) && item.values.length > 0);
+
+    return (
+      <section
+        style={{
+          marginTop: "2rem",
+          backgroundColor: palette.background,
+          borderRadius: 24,
+          padding: "24px 28px",
+          color: palette.text,
+          boxShadow: "0 20px 45px rgba(10,58,94,0.08)"
+        }}
+      >
+        <header
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            flexWrap: "wrap",
+            gap: "1rem",
+            marginBottom: "1.5rem"
+          }}
+        >
+          <div>
+            <p style={{ color: palette.accent, fontWeight: 600, letterSpacing: "0.08em" }}>
+              Avtalsanalys (beta)
+            </p>
+            <h2 style={{ color: palette.primary, fontSize: "1.5rem", marginTop: "0.25rem" }}>
+              Övergripande riskbild
+            </h2>
+            {analysis.overallRiskReason && (
+              <p style={{ marginTop: "0.35rem", maxWidth: "600px" }}>
+                {analysis.overallRiskReason}
+              </p>
+            )}
+          </div>
+          <RiskBadge
+            level={analysis.overallRisk}
+            label={`Övergripande: ${RISK_LABELS[analysis.overallRisk]}`}
+          />
+        </header>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "1rem"
+          }}
+        >
+          {summaryCards.map((card) => (
+            <div
+              key={card.key}
+              style={{
+                backgroundColor: "#fff",
+                borderRadius: 12,
+                padding: "1rem 1.25rem",
+                boxShadow: "0 10px 30px rgba(10,58,94,0.08)"
+              }}
+            >
+              <p style={{ fontWeight: 600, color: palette.primary, marginBottom: "0.5rem" }}>
+                {card.title}
+              </p>
+              <p style={{ lineHeight: 1.5 }}>{card.text}</p>
+            </div>
+          ))}
+        </div>
+
+        {insightItems.length > 0 && (
+          <div style={{ marginTop: "1.75rem" }}>
+            <h3 style={{ color: palette.primary, marginBottom: "0.75rem" }}>Identifierade fakta</h3>
+            <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap" }}>
+              {insightItems.map((item) => (
+                <div
+                  key={item.title}
+                  style={{
+                    backgroundColor: "#fff",
+                    borderRadius: 16,
+                    padding: "0.85rem 1.2rem",
+                    boxShadow: "0 8px 20px rgba(10,58,94,0.08)"
+                  }}
+                >
+                  <p style={{ fontWeight: 600, color: palette.accent }}>{item.title}</p>
+                  <div style={{ marginTop: "0.35rem", display: "flex", gap: "0.35rem", flexWrap: "wrap" }}>
+                    {item.values!.map((value) => (
+                      <span
+                        key={`${item.title}-${value}`}
+                        style={{
+                          backgroundColor: palette.background,
+                          padding: "0.25rem 0.6rem",
+                          borderRadius: 999,
+                          fontSize: "0.85rem",
+                          color: palette.primary,
+                          fontWeight: 500
+                        }}
+                      >
+                        {value}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div style={{ marginTop: "2rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            <h3 style={{ color: palette.primary }}>Viktiga sektioner</h3>
+            <span style={{ color: palette.accent, fontWeight: 600 }}>
+              {analysis.sections.length} st
+            </span>
+          </div>
+          <div
+            style={{
+              marginTop: "1rem",
+              borderRadius: 18,
+              backgroundColor: "#fff",
+              boxShadow: "0 15px 35px rgba(10,58,94,0.08)"
+            }}
+          >
+            {analysis.sections.length === 0 ? (
+              <p style={{ padding: "1.25rem", color: "#666" }}>
+                Inga sektioner identifierades i analysen.
+              </p>
+            ) : (
+              analysis.sections.map((section, index) => {
+                const isOpen = openSectionId === section.id;
+                return (
+                  <div
+                    key={section.id}
+                    style={{
+                      borderBottom:
+                        index === analysis.sections.length - 1 ? "none" : "1px solid #E5E7EB"
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => toggleSection(section.id)}
+                      style={{
+                        width: "100%",
+                        background: "transparent",
+                        border: "none",
+                        padding: "1rem 1.5rem",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        cursor: "pointer"
+                      }}
+                    >
+                      <div style={{ textAlign: "left" }}>
+                        <p style={{ fontWeight: 600, color: palette.text }}>
+                          {section.heading || `Sektion ${index + 1}`}
+                        </p>
+                        <p style={{ color: "#6B7280", fontSize: "0.9rem" }}>
+                          {section.category || "Kategori okänd"}
+                        </p>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                        {section.important && (
+                          <span
+                            style={{
+                              padding: "0.2rem 0.6rem",
+                              borderRadius: 999,
+                              backgroundColor: palette.accent,
+                              color: "#fff",
+                              fontSize: "0.75rem",
+                              fontWeight: 600
+                            }}
+                          >
+                            Viktig
+                          </span>
+                        )}
+                        <RiskBadge level={section.riskLevel} />
+                        <span style={{ fontSize: "1.4rem", color: palette.primary }}>
+                          {isOpen ? "−" : "+"}
+                        </span>
+                      </div>
+                    </button>
+                    {isOpen && (
+                      <div style={{ padding: "0 1.5rem 1.5rem", lineHeight: 1.5 }}>
+                        <p style={{ marginBottom: "0.75rem" }}>{section.text}</p>
+                        {section.riskReason && (
+                          <p style={{ color: "#475467" }}>
+                            <strong>Varför:</strong> {section.riskReason}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })
+            )}
+          </div>
+        </div>
+      </section>
+    );
+  }
 }

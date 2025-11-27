@@ -15,3 +15,21 @@ model DiaryEntry {
   imageUrl  String?
   createdAt DateTime @default(now())
 }
+
+model ContractDocument {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  title     String?
+  rawText   String
+  language  String
+  analyses  ContractAnalysis[]
+}
+
+model ContractAnalysis {
+  id         String           @id @default(cuid())
+  createdAt  DateTime         @default(now())
+  document   ContractDocument @relation(fields: [documentId], references: [id])
+  documentId String
+  overallRisk String
+  resultJson Json
+}

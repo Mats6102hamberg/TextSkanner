@@ -101,6 +101,37 @@ TextSkanner/
 
 Senare kan denna mock ersättas med riktig OCR.
 
+## Avtals- och dokumentanalys (Pro)
+
+- Backend exponerar ett API `POST /contracts/analyze` som använder en LLM (OpenAI) för att ge en teknisk, automatisk analys av uppladdad avtalstext.
+- Funktionen sammanfattar avtalet på flera nivåer, pekar ut riskområden och markerar viktiga sektioner, men **är inte juridisk rådgivning**.
+- Resultatet returneras som strukturerad JSON enligt `ContractAnalysisResult`-typen.
+
+### Miljövariabler
+
+Backend kräver följande nycklar (se `backend/.env.example`):
+
+```
+PORT=4000
+OPENAI_API_KEY=sk-din-nyckel
+CONTRACT_ANALYZER_MODEL=gpt-4.1-mini
+```
+
+Frontend behöver motsvarande `NEXT_PUBLIC_BACKEND_URL` och `OPENAI_API_KEY` om du använder de inbyggda Next-rutterna (se `frontend/.env.example`).
+
+### Testa kontraktsanalysen via curl
+
+```bash
+curl -X POST http://localhost:4000/api/contracts/analyze \
+  -H "Content-Type: application/json" \
+  -d '{
+    "rawText": "KLISTRA_IN_EN_TESTAVTALSTEXT_HÄR",
+    "language": "sv"
+  }'
+```
+
+API:t svarar med ett JSON-objekt som innehåller `overallRisk`, `summaries`, `sections` och detekterade parter/datum/belopp.
+
 ## Teknikstack
 
 **Backend**
