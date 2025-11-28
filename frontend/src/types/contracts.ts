@@ -27,3 +27,17 @@ export interface ContractAnalysisResult {
   detectedDates?: string[];
   detectedAmounts?: string[];
 }
+
+export type AnalyzeMode = "quick" | "save";
+
+export interface ContractAnalysisSummaryResult {
+  summary: string;
+  risks: string[];
+  keyPoints: string[];
+}
+
+export interface SavedContractSummary {
+  id: string;
+  name: string;
+  analyzedAt: string;
+}
