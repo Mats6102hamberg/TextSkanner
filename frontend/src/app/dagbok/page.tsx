@@ -3,14 +3,20 @@
 import { useState } from "react";
 
 import { PageShell } from "@/components/layout/PageShell";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent
+} from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { scanDiaryPage } from "@/services/apiClient";
 
 export default function DagbokPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
   const [resultText, setResultText] = useState("");
+  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   async function handleScan() {
@@ -43,59 +49,76 @@ export default function DagbokPage() {
   return (
     <PageShell
       title="Dagboksskanner"
-      subtitle="Gör handskrivna eller tryckta dagbokssidor till redigerbar text. Perfekt för minnesböcker, journaling eller terapi."
+      subtitle="Samla, strukturera och förstå dina dagbokstexter över tid. Perfekt för reflektion, personlig utveckling eller livsberättelser."
     >
-      <section className="grid gap-6 md:grid-cols-[1.2fr,0.8fr]">
+      <section className="grid gap-8 md:grid-cols-[1.3fr,0.7fr]">
         <Card>
           <CardHeader>
-            <CardTitle>Så funkar det</CardTitle>
-            <CardDescription>Ladda upp en bild eller PDF så tolkar OCR-motorn texten åt dig.</CardDescription>
+            <CardTitle>Steg 1: Skanna dagbokssidan</CardTitle>
+            <CardDescription>Ladda upp en bild eller PDF så gör OCR-motorn om den till text.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4 text-sm text-[#4B5563]">
-            <ol className="space-y-2">
-              <li>1. Fotografera eller skanna en dagbokssida.</li>
-              <li>2. Ladda upp filen nedan och starta skanningen.</li>
-              <li>3. Redigera resultatet direkt eller skicka vidare till Minnesbok.</li>
-            </ol>
             <div className="space-y-2">
+              <label className="text-sm font-semibold text-[#111111]">Välj fil</label>
               <input
                 type="file"
                 accept="image/*,.pdf"
                 onChange={(event) => {
-                  const selected = event.target.files?.[0] ?? null;
-                  setFile(selected);
+                  setFile(event.target.files?.[0] ?? null);
                   setResultText("");
                   setError(null);
                 }}
-                className="w-full rounded-lg border border-[#CBD5DF] bg-white px-3 py-2 text-sm file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-[#1E4A7A] file:px-4 file:py-2 file:text-white"
+                className="w-full rounded-xl border border-[#CBD5DF] bg-white px-3 py-2 text-sm file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-[#1E4A7A] file:px-4 file:py-2 file:text-white"
               />
               {file && <p className="text-xs text-[#6B7280]">Vald fil: {file.name}</p>}
             </div>
+
             <Button onClick={handleScan} disabled={isScanning} size="md">
               {isScanning ? "Skannar..." : "Skanna dagbokssida"}
             </Button>
+
             {error && <p className="text-sm font-semibold text-[#B42318]">{error}</p>}
+
+            <p className="text-xs text-[#6B7280]">
+              Tips: använd dagsljus eller en jämn belysning för bästa resultat. Du bestämmer själv vad som sparas i efterhand.
+            </p>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Tips innan du skannar</CardTitle>
-            <CardDescription>Maximera träffsäkerheten.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm text-[#4B5563]">
-            <p>• Använd dagsljus eller en lampa för att undvika skuggor.</p>
-            <p>• Se till att hela sidan syns och att texten är rak.</p>
-            <p>• Har du flera sidor? Skanna dem i tur och ordning och klistra in i Minnesbok.</p>
-          </CardContent>
-        </Card>
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Så funkar dagboksskannern</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-[#4B5563]">
+                <li>• Fotografera en sida eller exportera dagboken som PDF.</li>
+                <li>• Låt systemet hitta texten och visa den för redigering.</li>
+                <li>• Skicka vidare till Språkverktyget eller Minnesbok.</li>
+              </ul>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Exempel på användning</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-[#4B5563]">
+                <li>• Stressdagbok – identifiera återkommande mönster.</li>
+                <li>• Tacksamhetsbok – samla det som ger energi.</li>
+                <li>• Terapidagbok – ta med utdrag till samtal.</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
       </section>
 
       <section className="grid gap-6 md:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle>Resultat</CardTitle>
-            <CardDescription>Redigera direkt i fältet eller kopiera texten vidare.</CardDescription>
+            <CardDescription>Redigera texten direkt eller kopiera den vidare.</CardDescription>
           </CardHeader>
           <CardContent>
             <textarea
@@ -110,12 +133,12 @@ export default function DagbokPage() {
         <Card>
           <CardHeader>
             <CardTitle>Börja härnäst</CardTitle>
-            <CardDescription>Koppla dagbokstexten till nästa modul.</CardDescription>
+            <CardDescription>Koppla texten till andra moduler.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-[#4B5563]">
-            <p>• Skicka texten till Språkverktyget för att förenkla eller översätta.</p>
-            <p>• Lägg in texten i Minnesbok för att få kapitel och struktur.</p>
-            <p>• Exportera texten som backup innan du kastar originalet.</p>
+            <p>• Skicka vidare till Språkverktyget för att förenkla texten.</p>
+            <p>• Lägg in i Minnesbok för att skapa kapitel och struktur.</p>
+            <p>• Exportera som backup innan du arkiverar originalet.</p>
           </CardContent>
         </Card>
       </section>

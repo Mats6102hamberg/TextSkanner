@@ -2,6 +2,16 @@
 
 import { useState } from "react";
 
+import { PageShell } from "@/components/layout/PageShell";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent
+} from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+
 type DemoChapter = {
   title: string;
   summary: string;
@@ -38,72 +48,94 @@ export default function MinnesbokPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-5xl space-y-8">
-        <header className="space-y-3">
-          <h1 className="flex items-center gap-2 text-3xl font-bold text-slate-900 md:text-4xl">
-            <span>📚</span>
-            <span>Minnesbokgenerering</span>
-          </h1>
-          <p className="max-w-3xl text-sm text-slate-600 md:text-base">
-            Här kan du förbereda en minnesbok genom att klistra in dagboksanteckningar eller texter. Verktyget skapar en första
-            enkel kapitelstruktur som du senare kan finslipa och exportera till PDF eller tryck.
-          </p>
-          <p className="text-xs text-slate-500">Detta är en demo-version – i nästa steg kopplas AI som gör smartare kapitelindelning och färdiga bokutkast.</p>
-        </header>
-
-        <section className="grid items-start gap-6 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-slate-800">
-                Klistra in dina dagboksanteckningar eller minnestext
-              </label>
-              <textarea
-                value={text}
-                onChange={(event) => setText(event.target.value)}
-                placeholder="Skriv eller klistra in text här. Det kan vara anteckningar från olika år, reseberättelser, viktiga minnen..."
-                className="min-h-[220px] w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              <p className="text-xs text-slate-500">Tips: du kan senare koppla hit text direkt från Dagboksskannern.</p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={isGenerating}
-              className="inline-flex items-center justify-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-            >
+    <PageShell
+      title="Minnesbokgenerering"
+      subtitle="Klistra in dagboksanteckningar eller texter och låt verktyget föreslå kapitel. Perfekt för livsberättelser eller projekt du vill spara."
+    >
+      <section className="grid gap-8 md:grid-cols-[2fr,1.2fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Klistra in din text</CardTitle>
+            <CardDescription>Lägg in några stycken – verktyget delar upp dem i kapitel.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-[#4B5563]">
+            <textarea
+              value={text}
+              onChange={(event) => setText(event.target.value)}
+              placeholder="Skriv eller klistra in text här. Det kan vara anteckningar från olika år, reseberättelser, viktiga minnen..."
+              className="min-h-[220px] w-full rounded-2xl border border-[#D0D6DB] bg-white px-3 py-2 text-sm text-[#111111] shadow-sm focus:outline-none focus:ring-2 focus:ring-[#4A90E2]"
+            />
+            <p className="text-xs text-[#6B7280]">Tips: du kan senare koppla hit text direkt från Dagboksskannern.</p>
+            <Button onClick={handleGenerate} disabled={isGenerating}>
               {isGenerating ? "Skapar kapitel..." : "Skapa kapitelstruktur (demo)"}
-            </button>
-          </div>
+            </Button>
+          </CardContent>
+        </Card>
 
-          <div className="space-y-3">
-            <h2 className="text-sm font-semibold text-slate-800">Förslag på kapitel och avsnitt</h2>
-
-            <div className="min-h-[220px] rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Förslag på kapitel och avsnitt</CardTitle>
+              <CardDescription>Visas när du kört demoknappen.</CardDescription>
+            </CardHeader>
+            <CardContent>
               {chapters.length === 0 ? (
-                <p className="text-sm text-slate-500">
-                  När du har klistrat in text och klickat på <span className="font-medium">Skapa kapitelstruktur</span> visas ett första utkast här. Varje kapitel
-                  får en rubrik och kort sammanfattning.
+                <p className="text-sm text-[#4B5563]">
+                  När du har klistrat in text och klickat på <span className="font-medium">Skapa kapitelstruktur</span> visas ett första utkast här. Varje kapitel får en rubrik och kort sammanfattning.
                 </p>
               ) : (
-                <ol className="list-decimal space-y-3 pl-5 text-sm text-slate-800">
+                <ol className="list-decimal space-y-3 pl-5 text-sm text-[#111111]">
                   {chapters.map((chapter, index) => (
                     <li key={index} className="space-y-1">
                       <div className="font-semibold">{chapter.title}</div>
-                      <p className="text-xs text-slate-600">{chapter.summary}</p>
+                      <p className="text-xs text-[#6B7280]">{chapter.summary}</p>
                     </li>
                   ))}
                 </ol>
               )}
-            </div>
+            </CardContent>
+          </Card>
 
-            <p className="text-xs text-slate-500">
-              Nästa steg: lägga till funktion för att spara, redigera och exportera minnesboken som PDF eller tryckoriginal.
-            </p>
-          </div>
-        </section>
-      </div>
-    </main>
+          <Card>
+            <CardHeader>
+              <CardTitle>Exempel på användning</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ul className="space-y-2 text-sm text-[#4B5563]">
+                <li>• Stressdagbok – se vad som återkommer i din vardag.</li>
+                <li>• Tacksamhetsdagbok – förstärk det som fungerar bra.</li>
+                <li>• Terapidagbok – ta med dig mönster in i samtal.</li>
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Nästa steg</CardTitle>
+            <CardDescription>Så tar du kapitelutkastet vidare.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-[#4B5563]">
+            <p>• Lägg in kapitlen i Minnesbok-modulen när AI-stödet är klart.</p>
+            <p>• Exportera texten till PDF eller dela med familjen.</p>
+            <p>• Kombinera med bilder, scannade kort och ljud om du vill.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Planerad funktionalitet</CardTitle>
+            <CardDescription>Vad som byggs härnäst.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2 text-sm text-[#4B5563]">
+            <p>• AI som föreslår kapitelrubriker med tidslinje.</p>
+            <p>• Mallar för "År för år", "Relationer" eller "Resor".</p>
+            <p>• Export till tryckfärdig PDF direkt från plattformen.</p>
+          </CardContent>
+        </Card>
+      </section>
+    </PageShell>
   );
 }
