@@ -7,7 +7,7 @@ import { processLanguage, type LanguageMode } from "@/services/apiClient";
 const MODES: { mode: LanguageMode; label: string; description: string }[] = [
   { mode: "simplify", label: "Förenkla text", description: "Gör texten lättare att förstå" },
   { mode: "summarize", label: "Sammanfatta", description: "Plocka ut det viktigaste" },
-  { mode: "translate_en", label: "Översätt till engelska", description: "Enkel engelsk version" }
+  { mode: "translate_en", label: "Översätt till engelska", description: "Få en enkel engelsk version" }
 ];
 
 export default function SprakPage() {
@@ -40,63 +40,93 @@ export default function SprakPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto max-w-4xl space-y-6">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-bold text-slate-900">🌍 Språk & översättning</h1>
-          <p className="text-sm text-slate-600">
-            Klistra in text, välj vad du vill göra och låt assistenten förenkla, sammanfatta eller översätta åt dig.
+    <main className="min-h-screen bg-[#f8fafc] px-6 py-12">
+      <div className="mx-auto max-w-4xl space-y-8">
+        <header className="space-y-3 text-center">
+          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Textskanner V2</p>
+          <h1 className="text-4xl font-bold text-slate-900">🌍 Språk & översättning</h1>
+          <p className="text-base text-slate-600">
+            Klistra in text, välj en språkförbättring och låt assistenten förenkla, sammanfatta eller översätta åt dig.
           </p>
         </header>
 
-        <section className="space-y-4 rounded-xl border bg-white p-6 shadow-sm">
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800" htmlFor="language-input">
-              Din text
-            </label>
-            <textarea
-              id="language-input"
-              value={inputText}
-              onChange={(event) => setInputText(event.target.value)}
-              placeholder="Klistra in text här..."
-              className="min-h-[200px] w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
-            />
-            <p className="text-xs text-slate-500">Tips: du kan senare skicka texten vidare till Minnesboks-funktionen.</p>
+        <section className="grid gap-6 rounded-3xl bg-white p-6 shadow-[0_20px_50px_-25px_rgba(15,23,42,0.2)] md:grid-cols-2">
+          <div className="flex flex-col space-y-3">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-semibold text-slate-800" htmlFor="language-input">
+                  Klistra in texten här
+                </label>
+                <span className="text-xs text-slate-400">Max ~3 000 tecken</span>
+              </div>
+              <textarea
+                id="language-input"
+                value={inputText}
+                onChange={(event) => setInputText(event.target.value)}
+                placeholder="Skriv eller klistra in stycket du vill bearbeta..."
+                className="min-h-[260px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-inner focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+              />
+            </div>
+            <p className="text-xs text-slate-500">Tips: efter bearbetningen kan du föra över texten till Minnesbok eller andra moduler.</p>
+            {error === "Skriv in text först." && (
+              <p className="text-sm font-medium text-rose-500">Klistra in lite text innan du väljer en åtgärd.</p>
+            )}
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            {MODES.map((option) => (
-              <button
-                key={option.mode}
-                type="button"
-                onClick={() => handleProcess(option.mode)}
-                disabled={isLoading}
-                className={`rounded-lg border px-4 py-3 text-left text-sm transition ${
-                  mode === option.mode ? "border-blue-600 bg-blue-50" : "border-slate-200 bg-white hover:bg-slate-50"
-                } ${isLoading ? "opacity-70 cursor-not-allowed" : ""}`}
-              >
-                <div className="font-semibold text-slate-900">{option.label}</div>
-                <p className="mt-1 text-xs text-slate-500">{option.description}</p>
-              </button>
-            ))}
+          <div className="space-y-4">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Välj åtgärd</h2>
+            <div className="space-y-3">
+              {MODES.map((option) => (
+                <button
+                  key={option.mode}
+                  type="button"
+                  onClick={() => handleProcess(option.mode)}
+                  disabled={isLoading}
+                  className={`w-full rounded-2xl border px-5 py-4 text-left transition hover:-translate-y-1 hover:shadow-lg ${
+                    mode === option.mode
+                      ? "border-blue-600 bg-blue-50 shadow-inner"
+                      : "border-slate-200 bg-white"
+                  } ${isLoading ? "cursor-not-allowed opacity-70" : ""}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-base font-semibold text-slate-900">{option.label}</p>
+                      <p className="text-xs text-slate-500">{option.description}</p>
+                    </div>
+                    {mode === option.mode && <span className="text-xs font-semibold text-blue-600">Aktiv</span>}
+                  </div>
+                </button>
+              ))}
+            </div>
+            {error && error !== "Skriv in text först." && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
+                Något gick fel, försök igen.
+              </div>
+            )}
+            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              <p className="font-semibold text-slate-800">Snabbtips</p>
+              • Förenkla långa mejl innan du svarar.<br />• Sammanfatta mötesanteckningar.<br />• Översätt textutdrag till engelska.
+            </div>
           </div>
+        </section>
 
-          {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
-          )}
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800" htmlFor="language-output">
-              Resultat
-            </label>
-            <textarea
-              id="language-output"
-              value={outputText}
-              onChange={(event) => setOutputText(event.target.value)}
-              placeholder={isLoading ? "Bearbetar texten..." : "Här visas resultatet."}
-              className="min-h-[180px] w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
-            />
+        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Resultat</p>
+              <h3 className="text-2xl font-semibold text-slate-900">{isLoading ? "Arbetar..." : "Bearbetad text"}</h3>
+            </div>
+            {mode && (
+              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                {mode === "simplify" && "Förenklad"}
+                {mode === "summarize" && "Sammanfattad"}
+                {mode === "translate_en" && "Engelsk version"}
+              </span>
+            )}
           </div>
+          <pre className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-900">
+            {outputText || (isLoading ? "Bearbetar texten..." : "Resultatet visas här när du valt en åtgärd.")}
+          </pre>
         </section>
       </div>
     </main>
