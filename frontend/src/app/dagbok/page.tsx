@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import { PageShell } from "@/components/layout/PageShell";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { scanDiaryPage } from "@/services/apiClient";
 
 export default function DagbokPage() {
@@ -38,60 +41,84 @@ export default function DagbokPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 px-6 py-10">
-      <div className="mx-auto space-y-6 max-w-3xl">
-        <header className="space-y-2">
-          <h1 className="text-3xl font-bold text-slate-900">📄 Dagboksskanner</h1>
-          <p className="text-sm text-slate-600">
-            Skanna handskrivna sidor och gör dem till text. Perfekt för dagböcker, minnen och berättelser. Texten kan sparas eller
-            skickas vidare till Minnesboks-generatorn.
-          </p>
-        </header>
+    <PageShell
+      title="Dagboksskanner"
+      subtitle="Gör handskrivna eller tryckta dagbokssidor till redigerbar text. Perfekt för minnesböcker, journaling eller terapi."
+    >
+      <section className="grid gap-6 md:grid-cols-[1.2fr,0.8fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Så funkar det</CardTitle>
+            <CardDescription>Ladda upp en bild eller PDF så tolkar OCR-motorn texten åt dig.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-[#4B5563]">
+            <ol className="space-y-2">
+              <li>1. Fotografera eller skanna en dagbokssida.</li>
+              <li>2. Ladda upp filen nedan och starta skanningen.</li>
+              <li>3. Redigera resultatet direkt eller skicka vidare till Minnesbok.</li>
+            </ol>
+            <div className="space-y-2">
+              <input
+                type="file"
+                accept="image/*,.pdf"
+                onChange={(event) => {
+                  const selected = event.target.files?.[0] ?? null;
+                  setFile(selected);
+                  setResultText("");
+                  setError(null);
+                }}
+                className="w-full rounded-lg border border-[#CBD5DF] bg-white px-3 py-2 text-sm file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-[#1E4A7A] file:px-4 file:py-2 file:text-white"
+              />
+              {file && <p className="text-xs text-[#6B7280]">Vald fil: {file.name}</p>}
+            </div>
+            <Button onClick={handleScan} disabled={isScanning} size="md">
+              {isScanning ? "Skannar..." : "Skanna dagbokssida"}
+            </Button>
+            {error && <p className="text-sm font-semibold text-[#B42318]">{error}</p>}
+          </CardContent>
+        </Card>
 
-        <section className="space-y-4 rounded-xl border bg-white p-6 shadow-sm">
-          <div className="space-y-2">
-            <p className="text-sm text-slate-600">👉 Ladda upp en bild eller PDF för att konvertera dagbokstext.</p>
-            <input
-              type="file"
-              accept="image/*,.pdf"
-              onChange={(event) => {
-                const selected = event.target.files?.[0] ?? null;
-                setFile(selected);
-                setResultText("");
-                setError(null);
-              }}
-              className="rounded-md text-sm file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-white"
-            />
-            {file && <p className="text-xs text-slate-500">Vald fil: {file.name}</p>}
-          </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Tips innan du skannar</CardTitle>
+            <CardDescription>Maximera träffsäkerheten.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-[#4B5563]">
+            <p>• Använd dagsljus eller en lampa för att undvika skuggor.</p>
+            <p>• Se till att hela sidan syns och att texten är rak.</p>
+            <p>• Har du flera sidor? Skanna dem i tur och ordning och klistra in i Minnesbok.</p>
+          </CardContent>
+        </Card>
+      </section>
 
-          <button
-            type="button"
-            onClick={handleScan}
-            disabled={isScanning}
-            className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isScanning ? "Skannar..." : "Skanna dagbokssida"}
-          </button>
-
-          {error && (
-            <div className="rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">{error}</div>
-          )}
-
-          <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-800" htmlFor="scan-result">
-              OCR-resultat
-            </label>
+      <section className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Resultat</CardTitle>
+            <CardDescription>Redigera direkt i fältet eller kopiera texten vidare.</CardDescription>
+          </CardHeader>
+          <CardContent>
             <textarea
-              id="scan-result"
               value={resultText}
               onChange={(event) => setResultText(event.target.value)}
               placeholder="Här visas texten från din senaste skanning."
-              className="h-60 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-800 focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-200"
+              className="min-h-[240px] w-full rounded-2xl border border-[#E2E6EB] bg-[#F9FAFB] px-4 py-3 text-sm text-[#111111] focus:border-[#4A90E2] focus:outline-none focus:ring-2 focus:ring-[#4A90E2]/30"
             />
-          </div>
-        </section>
-      </div>
-    </main>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Börja härnäst</CardTitle>
+            <CardDescription>Koppla dagbokstexten till nästa modul.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-[#4B5563]">
+            <p>• Skicka texten till Språkverktyget för att förenkla eller översätta.</p>
+            <p>• Lägg in texten i Minnesbok för att få kapitel och struktur.</p>
+            <p>• Exportera texten som backup innan du kastar originalet.</p>
+          </CardContent>
+        </Card>
+      </section>
+    </PageShell>
   );
 }

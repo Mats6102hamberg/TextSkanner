@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 
+import { PageShell } from "@/components/layout/PageShell";
+import { Button } from "@/components/ui/Button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { processLanguage, type LanguageMode } from "@/services/apiClient";
 
 const MODES: { mode: LanguageMode; label: string; description: string }[] = [
@@ -40,95 +43,121 @@ export default function SprakPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f8fafc] px-6 py-12">
-      <div className="mx-auto max-w-4xl space-y-8">
-        <header className="space-y-3 text-center">
-          <p className="text-sm uppercase tracking-[0.3em] text-slate-500">Textskanner V2</p>
-          <h1 className="text-4xl font-bold text-slate-900">🌍 Språk & översättning</h1>
-          <p className="text-base text-slate-600">
-            Klistra in text, välj en språkförbättring och låt assistenten förenkla, sammanfatta eller översätta åt dig.
-          </p>
-        </header>
-
-        <section className="grid gap-6 rounded-3xl bg-white p-6 shadow-[0_20px_50px_-25px_rgba(15,23,42,0.2)] md:grid-cols-2">
-          <div className="flex flex-col space-y-3">
-            <div className="space-y-2">
+    <PageShell
+      title="Språk & översättning"
+      subtitle="Klistra in text, välj en språkåtgärd och få ett tydligt resultat som du kan dela eller bearbeta vidare."
+    >
+      <section className="grid gap-6 md:grid-cols-[1.3fr,0.7fr]">
+        <Card>
+          <CardHeader>
+            <CardTitle>Börja här</CardTitle>
+            <CardDescription>Klistra in din text och välj en åtgärd.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4 text-sm text-[#4B5563]">
+            <div>
               <div className="flex items-center justify-between">
-                <label className="text-sm font-semibold text-slate-800" htmlFor="language-input">
-                  Klistra in texten här
+                <label className="text-sm font-semibold text-[#111111]" htmlFor="language-input">
+                  Inmatningsfält
                 </label>
-                <span className="text-xs text-slate-400">Max ~3 000 tecken</span>
+                <span className="text-xs text-[#6B7280]">Max ~3 000 tecken</span>
               </div>
               <textarea
                 id="language-input"
                 value={inputText}
                 onChange={(event) => setInputText(event.target.value)}
-                placeholder="Skriv eller klistra in stycket du vill bearbeta..."
-                className="min-h-[260px] w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-900 shadow-inner focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                placeholder="Skriv eller klistra in texten du vill förenkla, sammanfatta eller översätta..."
+                className="mt-2 min-h-[220px] w-full rounded-2xl border border-[#E2E6EB] bg-[#F9FAFB] px-4 py-3 text-sm text-[#111111] focus:border-[#4A90E2] focus:outline-none focus:ring-2 focus:ring-[#4A90E2]/30"
               />
+              <p className="mt-2 text-xs text-[#6B7280]">Tips: du kan även klistra in text direkt från Dagboksskannern eller Avtalskollen.</p>
+              {error === "Skriv in text först." && <p className="text-sm font-medium text-[#B42318]">Klistra in text innan du väljer åtgärd.</p>}
             </div>
-            <p className="text-xs text-slate-500">Tips: efter bearbetningen kan du föra över texten till Minnesbok eller andra moduler.</p>
-            {error === "Skriv in text först." && (
-              <p className="text-sm font-medium text-rose-500">Klistra in lite text innan du väljer en åtgärd.</p>
-            )}
-          </div>
 
-          <div className="space-y-4">
-            <h2 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">Välj åtgärd</h2>
             <div className="space-y-3">
               {MODES.map((option) => (
-                <button
+                <Button
                   key={option.mode}
                   type="button"
-                  onClick={() => handleProcess(option.mode)}
+                  size="lg"
+                  variant={mode === option.mode ? "primary" : "secondary"}
                   disabled={isLoading}
-                  className={`w-full rounded-2xl border px-5 py-4 text-left transition hover:-translate-y-1 hover:shadow-lg ${
-                    mode === option.mode
-                      ? "border-blue-600 bg-blue-50 shadow-inner"
-                      : "border-slate-200 bg-white"
-                  } ${isLoading ? "cursor-not-allowed opacity-70" : ""}`}
+                  className="w-full justify-between"
+                  onClick={() => handleProcess(option.mode)}
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-base font-semibold text-slate-900">{option.label}</p>
-                      <p className="text-xs text-slate-500">{option.description}</p>
-                    </div>
-                    {mode === option.mode && <span className="text-xs font-semibold text-blue-600">Aktiv</span>}
-                  </div>
-                </button>
+                  <span>
+                    {option.label}
+                    <span className="block text-xs font-normal text-[#E2E6EB] sm:inline sm:pl-2 sm:text-[0.7rem]">
+                      {option.description}
+                    </span>
+                  </span>
+                  {mode === option.mode && !isLoading && <span className="text-xs font-semibold">Aktiv</span>}
+                </Button>
               ))}
             </div>
-            {error && error !== "Skriv in text först." && (
-              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">
-                Något gick fel, försök igen.
-              </div>
-            )}
-            <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-              <p className="font-semibold text-slate-800">Snabbtips</p>
-              • Förenkla långa mejl innan du svarar.<br />• Sammanfatta mötesanteckningar.<br />• Översätt textutdrag till engelska.
-            </div>
-          </div>
-        </section>
 
-        <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Resultat</p>
-              <h3 className="text-2xl font-semibold text-slate-900">{isLoading ? "Arbetar..." : "Bearbetad text"}</h3>
-            </div>
-            {mode && (
-              <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-                {mode === "simplify" && "Förenklad"}
-                {mode === "summarize" && "Sammanfattad"}
-                {mode === "translate_en" && "Engelsk version"}
-              </span>
+            {error && error !== "Skriv in text först." && (
+              <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600">Något gick fel, försök igen.</div>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Snabbtips</CardTitle>
+            <CardDescription>Så får du mer nytta av språkverktyget.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-[#4B5563]">
+            <p>• Förenkla myndighetsbrev innan du skickar dem till familjer eller klienter.</p>
+            <p>• Sammanfatta mötesanteckningar och mejla som punktlista.</p>
+            <p>• Översätt korta textstycken till enkel engelska när det behövs.</p>
+            <p className="text-xs text-[#6B7280]">Koppla ihop texten med Minnesbok eller Avtalskollen när du vill återanvända resultatet.</p>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="rounded-3xl border border-[#E2E6EB] bg-white p-6 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <p className="text-xs uppercase tracking-[0.3em] text-[#6B7280]">Resultat</p>
+            <h3 className="text-2xl font-semibold text-[#111111]">{isLoading ? "Arbetar..." : "Bearbetad text"}</h3>
           </div>
-          <pre className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-900">
-            {outputText || (isLoading ? "Bearbetar texten..." : "Resultatet visas här när du valt en åtgärd.")}
-          </pre>
-        </section>
-      </div>
-    </main>
+          {mode && (
+            <span className="rounded-full bg-[#EEF2F7] px-3 py-1 text-xs font-medium text-[#1E4A7A]">
+              {mode === "simplify" && "Förenklad"}
+              {mode === "summarize" && "Sammanfattad"}
+              {mode === "translate_en" && "Engelsk version"}
+            </span>
+          )}
+        </div>
+        <pre className="mt-4 min-h-[220px] whitespace-pre-wrap rounded-2xl border border-[#E2E6EB] bg-[#F9FAFB] p-4 text-sm text-[#111111]">
+          {outputText || (isLoading ? "Bearbetar texten..." : "Resultatet visas här när du valt en åtgärd.")}
+        </pre>
+      </section>
+
+      <section className="grid gap-6 md:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Börja använda direkt</CardTitle>
+            <CardDescription>Tre snabba arbetssätt.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-[#4B5563]">
+            <p>1. Kopiera text från Dagboksskannern och förenkla till vardagsspråk.</p>
+            <p>2. Sätt ihop mötesanteckningar till en kort sammanfattning.</p>
+            <p>3. Översätt en mall till engelska för klienter eller kollegor.</p>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Håll ihop flödet</CardTitle>
+            <CardDescription>Kombinera språkverktyget med andra moduler.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm text-[#4B5563]">
+            <p>• Skicka resultatet till Minnesbok för att bygga kapitel.</p>
+            <p>• Lägg till språkförklaringar i Avtalskollen innan du delar.</p>
+            <p>• Exportera texten som backup och återanvänd i dokument eller mejl.</p>
+          </CardContent>
+        </Card>
+      </section>
+    </PageShell>
   );
 }
