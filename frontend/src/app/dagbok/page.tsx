@@ -22,7 +22,7 @@ export default function DagbokPage() {
       setResultText("");
 
       const response = await scanDiaryPage(file);
-      const text = response?.original ?? response?.text ?? "";
+      const text = response?.text ?? "";
 
       if (!text) {
         throw new Error("OCR gav inget textresultat.");
