@@ -123,7 +123,7 @@ Automatisk detektion och maskering av:
 
 #### Maskera text
 ```bash
-POST http://localhost:4000/api/masking/mask
+POST http://localhost:4000/api/masking/process
 Content-Type: application/json
 
 {
@@ -166,30 +166,6 @@ Content-Type: application/json
 }
 ```
 
-#### Kontrollera känslig information
-```bash
-POST http://localhost:4000/api/masking/check
-Content-Type: application/json
-
-{
-  "text": "Min email är test@test.com"
-}
-```
-
-**Svar:**
-```json
-{
-  "hasSensitiveInfo": true,
-  "stats": {
-    "totalMasked": 1,
-    "personnummer": 0,
-    "email": 1,
-    "phone": 0,
-    "number": 0
-  },
-  "types": ["email"]
-}
-```
 
 ### Integration med OCR
 
