@@ -80,31 +80,15 @@ export function maskText(
 
   // Svenska telefonnummer (enkel v1): +46..., 07..., 08...
   if (options.maskPhone) {
-    // International format: +46 followed by 9-10 digits
-    const intlPhonePattern = /\+46[\s-]?\d{1,3}[\s-]?\d{3,4}[\s-]?\d{2,4}/g;
-    applyPattern(intlPhonePattern, "phone", () => '+46-XXX-XXX-XX');
-
-    // Swedish mobile: 07X-XXX XX XX
-    const mobilePattern = /\b07[\d\s-]{8,12}\b/g;
-    applyPattern(mobilePattern, "phone", () => '07X-XXX-XX-XX');
-
-    // Stockholm landline: 08-XXX XX XX
-    const stockholmPattern = /\b08[\s-]?[\d\s-]{6,10}\b/g;
-    applyPattern(stockholmPattern, "phone", () => '08-XXX-XX-XX');
+    const phonePattern =
+      /\b(\+46|0)(\s*\d[\s-]*){7,}\b/g;
+    applyPattern(phonePattern, "phone", () => "[MASKERAT TELEFONNUMMER]");
   }
 
-  // Långa nummer (t.ex. bankkonton, organisationsnummer)
+  // Längre siffersekvenser (t.ex. kontonummer, contract IDs)
   if (options.maskLongNumbers) {
-    // Organisationsnummer: XXXXXX-XXXX (6 siffror, bindestreck, 4 siffror)
-    const orgPattern = /\b\d{6}-\d{4}\b/g;
-    applyPattern(orgPattern, "number", (match) => {
-      const parts = match.split('-');
-      return `${parts[0]}-XXXX`;
-    });
-
-    // Bankkonton: sekvenser av 10+ siffror (med optional bindestreck/mellanslag)
-    const bankPattern = /\b\d{4}[\s-]?\d{4}[\s-]?\d{4,}\b/g;
-    applyPattern(bankPattern, "number", () => "XXXX-XXXX-XXXX");
+    const longNumberPattern = /\b\d{8,}\b/g;
+    applyPattern(longNumberPattern, "number", () => "[MASKERAT NUMMER]");
   }
 
   return {

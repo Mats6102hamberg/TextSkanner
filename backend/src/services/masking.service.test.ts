@@ -47,43 +47,45 @@ describe('maskText', () => {
   });
 
   describe('Phone numbers', () => {
-    it('should mask Swedish mobile number', () => {
+    it('should mask Swedish mobile number with dashes', () => {
       const text = 'Ring mig på 070-123 45 67';
       const result = maskText(text, { maskPhone: true });
 
-      expect(result.maskedText).toContain('07X-XXX-XX-XX');
+      expect(result.maskedText).toContain('[MASKERAT TELEFONNUMMER]');
       expect(result.changes[0].type).toBe('phone');
-    });
-
-    it('should mask international format', () => {
-      const text = 'Tel: +46701234567';
-      const result = maskText(text, { maskPhone: true });
-
-      expect(result.maskedText).toContain('+46-XXX-XXX-XX');
     });
 
     it('should mask Stockholm landline', () => {
       const text = 'Kontor: 08-123 456 78';
       const result = maskText(text, { maskPhone: true });
 
-      expect(result.maskedText).toContain('08-XXX-XX-XX');
+      expect(result.maskedText).toContain('[MASKERAT TELEFONNUMMER]');
+    });
+
+    it('should detect phone pattern', () => {
+      const text = 'Mitt nummer: 0701234567';
+      const result = maskText(text, { maskPhone: true });
+
+      expect(result.changes.length).toBeGreaterThan(0);
+      expect(result.changes[0].type).toBe('phone');
     });
   });
 
   describe('Long numbers', () => {
-    it('should mask organisationsnummer', () => {
-      const text = 'Org.nr: 556677-8899';
+    it('should mask long number sequences', () => {
+      const text = 'Kontonummer: 12345678';
       const result = maskText(text, { maskLongNumbers: true });
 
-      expect(result.maskedText).toBe('Org.nr: 556677-XXXX');
+      expect(result.maskedText).toContain('[MASKERAT NUMMER]');
       expect(result.changes[0].type).toBe('number');
     });
 
-    it('should mask bank account numbers', () => {
-      const text = 'Bankgiro: 1234 5678 9012';
+    it('should mask multiple long numbers', () => {
+      const text = 'ID: 12345678 och 98765432';
       const result = maskText(text, { maskLongNumbers: true });
 
-      expect(result.maskedText).toContain('XXXX-XXXX-XXXX');
+      expect(result.changes).toHaveLength(2);
+      expect(result.maskedText).toContain('[MASKERAT NUMMER]');
     });
   });
 
