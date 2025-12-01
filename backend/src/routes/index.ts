@@ -4,6 +4,7 @@ import ocrRouter from "./ocr.routes";
 import contractsRouter from "./contracts.routes";
 import languageRouter from "./language.routes";
 import stripeRouter from "./stripe.routes";
+import maskingRouter from "./masking.routes";
 
 const router = Router();
 
@@ -12,5 +13,6 @@ router.use("/ocr", ocrRouter);
 router.use("/contracts", contractsRouter);
 router.use("/language", languageRouter);
 router.use("/stripe", stripeRouter);
+router.use("/masking", maskingRouter);
 
 export default router;

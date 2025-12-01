@@ -107,6 +107,123 @@ Senare kan denna mock ersättas med riktig OCR.
 - Funktionen sammanfattar avtalet på flera nivåer, pekar ut riskområden och markerar viktiga sektioner, men **är inte juridisk rådgivning**.
 - Resultatet returneras som strukturerad JSON enligt `ContractAnalysisResult`-typen.
 
+## PII-Maskeringstjänst (Privacy)
+
+Backend innehåller en kraftfull maskeringsmotor för att skydda personlig identifierbar information (PII) i skannad text.
+
+### Funktioner
+
+Automatisk detektion och maskering av:
+- **Personnummer** (ÅÅMMDD-XXXX eller ÅÅÅÅMMDD-XXXX)
+- **E-postadresser**
+- **Svenska telefonnummer** (+46, 07X, 08)
+- **Långa nummer** (organisationsnummer, bankkonton)
+
+### API Endpoints
+
+#### Maskera text
+```bash
+POST http://localhost:4000/api/masking/mask
+Content-Type: application/json
+
+{
+  "text": "Kontakta Anna på 850312-1234 eller anna@example.com",
+  "options": {
+    "maskPersonnummer": true,
+    "maskEmail": true,
+    "maskPhone": true,
+    "maskLongNumbers": true
+  }
+}
+```
+
+**Svar:**
+```json
+{
+  "originalText": "Kontakta Anna på 850312-1234 eller anna@example.com",
+  "maskedText": "Kontakta Anna på 850312-XXXX eller [MASKERAD E-POST]",
+  "changes": [
+    {
+      "type": "personnummer",
+      "original": "850312-1234",
+      "masked": "850312-XXXX",
+      "index": 18
+    },
+    {
+      "type": "email",
+      "original": "anna@example.com",
+      "masked": "[MASKERAD E-POST]",
+      "index": 39
+    }
+  ],
+  "stats": {
+    "totalMasked": 2,
+    "personnummer": 1,
+    "email": 1,
+    "phone": 0,
+    "number": 0
+  }
+}
+```
+
+#### Kontrollera känslig information
+```bash
+POST http://localhost:4000/api/masking/check
+Content-Type: application/json
+
+{
+  "text": "Min email är test@test.com"
+}
+```
+
+**Svar:**
+```json
+{
+  "hasSensitiveInfo": true,
+  "stats": {
+    "totalMasked": 1,
+    "personnummer": 0,
+    "email": 1,
+    "phone": 0,
+    "number": 0
+  },
+  "types": ["email"]
+}
+```
+
+### Integration med OCR
+
+OCR-endpoint stödjer automatisk maskering:
+
+```bash
+POST http://localhost:4000/api/ocr
+Content-Type: application/json
+
+{
+  "imageUrl": "https://example.com/dagbok.jpg",
+  "applyMasking": true
+}
+```
+
+**Svar inkluderar maskeringsstatistik:**
+```json
+{
+  "text": "Maskerad text...",
+  "source": "imageUrl",
+  "confidence": 0.95,
+  "masking": {
+    "applied": true,
+    "stats": {
+      "totalMasked": 3,
+      "personnummer": 1,
+      "email": 1,
+      "phone": 1,
+      "number": 0
+    }
+  }
+}
+```
+
 ## Stripe Webhook-mottagare
 
 Backend har stöd för att ta emot och bearbeta Stripe webhooks för betalningar och prenumerationer.
