@@ -107,6 +107,57 @@ Senare kan denna mock ersättas med riktig OCR.
 - Funktionen sammanfattar avtalet på flera nivåer, pekar ut riskområden och markerar viktiga sektioner, men **är inte juridisk rådgivning**.
 - Resultatet returneras som strukturerad JSON enligt `ContractAnalysisResult`-typen.
 
+## Stripe Webhook-mottagare
+
+Backend har stöd för att ta emot och bearbeta Stripe webhooks för betalningar och prenumerationer.
+
+### Funktioner
+
+- **Signaturverifiering** – Alla webhooks verifieras automatiskt med Stripe webhook secret
+- **Händelsetyper som hanteras:**
+  - `payment_intent.succeeded` – Lyckad betalning
+  - `payment_intent.payment_failed` – Misslyckad betalning
+  - `checkout.session.completed` – Checkout-session klar
+  - `customer.subscription.created` – Prenumeration skapad
+  - `customer.subscription.updated` – Prenumeration uppdaterad
+  - `customer.subscription.deleted` – Prenumeration avslutad
+  - `invoice.paid` – Faktura betald
+  - `invoice.payment_failed` – Faktura ej betald
+
+### Endpoint
+
+```
+POST http://localhost:4000/api/stripe/webhook
+```
+
+### Konfiguration i Stripe Dashboard
+
+1. Gå till **Developers** → **Webhooks**
+2. Klicka på **Add endpoint**
+3. Lägg till URL: `https://your-domain.com/api/stripe/webhook`
+4. Välj events att lyssna på (se lista ovan)
+5. Kopiera **Signing secret** (börjar med `whsec_`)
+6. Lägg till i `.env`:
+   ```
+   STRIPE_WEBHOOK_SECRET=whsec_din_webhook_secret
+   ```
+
+### Testa lokalt med Stripe CLI
+
+```bash
+# Installera Stripe CLI
+brew install stripe/stripe-cli/stripe
+
+# Logga in
+stripe login
+
+# Vidarebefordra webhooks till lokal server
+stripe listen --forward-to localhost:4000/api/stripe/webhook
+
+# Skicka test-event
+stripe trigger payment_intent.succeeded
+```
+
 ### Miljövariabler
 
 Backend kräver följande nycklar (se `backend/.env.example`):
@@ -115,6 +166,10 @@ Backend kräver följande nycklar (se `backend/.env.example`):
 PORT=4000
 OPENAI_API_KEY=sk-din-nyckel
 CONTRACT_ANALYZER_MODEL=gpt-4.1-mini
+
+# Stripe
+STRIPE_SECRET_KEY=sk_test_din_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_din_webhook_secret
 ```
 
 Frontend behöver motsvarande `NEXT_PUBLIC_BACKEND_URL` och `OPENAI_API_KEY` om du använder de inbyggda Next-rutterna (se `frontend/.env.example`).
