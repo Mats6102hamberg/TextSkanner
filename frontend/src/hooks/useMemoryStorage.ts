@@ -11,7 +11,7 @@ import {
   deleteMemoryProject,
   saveMemoryBookForProject,
 } from "@/lib/memory/storage";
-import { MemoryBook, MemoryMode } from "@/lib/memory/types";
+import { FamilyMagic, MemoryBook, MemoryMode } from "@/lib/memory/types";
 
 export function useMemoryProjects() {
   const [projects, setProjects] = useState<StoredMemoryProject[]>([]);
@@ -32,6 +32,7 @@ export function useMemoryProjects() {
       timeSpan?: string;
       mode: MemoryMode;
       book: MemoryBook;
+      familyMagic?: FamilyMagic;
     }) => {
       const project = createMemoryProject(input);
       setProjects(listMemoryProjects());

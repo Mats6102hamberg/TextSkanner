@@ -23,3 +23,28 @@ export interface MemoryBook {
   mode: MemoryMode;
   chapters: MemoryChapter[];
 }
+
+export interface FamilyMagicPerson {
+  name: string;
+  mentioned: number;
+  guessedRole?: string;
+}
+
+export interface FamilyMagic {
+  persons: FamilyMagicPerson[];
+  places: string[];
+  themes: string[];
+  earliestDate?: string;
+  latestDate?: string;
+  timelineSummary?: string;
+}
+
+export interface MemoryProject {
+  id: string;
+  title: string;
+  personName?: string;
+  timeSpan?: string;
+  mode: MemoryMode;
+  book: MemoryBook;
+  familyMagic?: FamilyMagic;
+}

@@ -4,7 +4,12 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 
 import { useMemoryProject } from "@/hooks/useMemoryStorage";
-import type { MemoryBook, MemoryChapter, MemoryEntry } from "@/lib/memory/types";
+import type {
+  FamilyMagic,
+  MemoryBook,
+  MemoryChapter,
+  MemoryEntry,
+} from "@/lib/memory/types";
 
 interface Props {
   id: string;
@@ -178,8 +183,8 @@ export function MemoryProjectView({ id }: Props) {
         </div>
       </header>
 
-      <div className="flex flex-col gap-4 md:flex-row">
-        <aside className="md:w-1/4">
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[0.9fr,1.7fr,1fr]">
+        <aside className="lg:w-auto">
           <div className="rounded-2xl border bg-white p-3 shadow-sm">
             <h2 className="mb-2 text-sm font-semibold">Kapitel</h2>
             <ul className="space-y-1 text-sm">
@@ -205,7 +210,7 @@ export function MemoryProjectView({ id }: Props) {
           </div>
         </aside>
 
-        <main className="md:w-3/4">
+        <main className="lg:w-auto">
           <div className="space-y-4 rounded-2xl border bg-white p-4 shadow-sm">
             <div className="space-y-2">
               <label className="block text-xs font-semibold text-gray-600">Kapiteltitel</label>
@@ -274,7 +279,101 @@ export function MemoryProjectView({ id }: Props) {
             </div>
           </div>
         </main>
+
+        <aside className="lg:w-auto">
+          <FamilyMagicPanel data={project?.familyMagic} />
+        </aside>
       </div>
     </section>
+  );
+}
+
+function FamilyMagicPanel({ data }: { data?: FamilyMagic }) {
+  return (
+    <div className="rounded-2xl border bg-white p-4 text-sm shadow-sm">
+      <h2 className="text-base font-semibold">Släktmagin</h2>
+      <p className="text-xs text-gray-500">Personer, platser och teman från dina texter.</p>
+
+      {!data ? (
+        <p className="mt-4 text-xs text-gray-500">Ingen släktmagi genererad ännu.</p>
+      ) : (
+        <div className="mt-4 space-y-4 text-xs text-gray-600">
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Personer
+            </h3>
+            {data.persons?.length ? (
+              <ul className="mt-2 space-y-1">
+                {data.persons.map((person) => (
+                  <li key={person.name} className="flex items-center justify-between rounded-lg border px-2 py-1">
+                    <div>
+                      <p className="font-medium text-gray-800">{person.name}</p>
+                      {person.guessedRole && (
+                        <p className="text-[10px] text-gray-500">{person.guessedRole}</p>
+                      )}
+                    </div>
+                    <span className="text-[10px] text-gray-500">{person.mentioned}×</span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-[11px] text-gray-500">Inga personer hittades.</p>
+            )}
+          </section>
+
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Platser</h3>
+            {data.places?.length ? (
+              <ul className="mt-2 flex flex-wrap gap-1">
+                {data.places.map((place) => (
+                  <li
+                    key={place}
+                    className="rounded-full bg-gray-100 px-2 py-1 text-[11px] text-gray-700"
+                  >
+                    {place}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-[11px] text-gray-500">Inga platser hittades.</p>
+            )}
+          </section>
+
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Teman</h3>
+            {data.themes?.length ? (
+              <ul className="mt-2 flex flex-wrap gap-1">
+                {data.themes.map((theme) => (
+                  <li
+                    key={theme}
+                    className="rounded-full bg-blue-50 px-2 py-1 text-[11px] text-blue-600"
+                  >
+                    {theme}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="mt-1 text-[11px] text-gray-500">Inga teman hittades.</p>
+            )}
+          </section>
+
+          <section>
+            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">Tidslinje</h3>
+            {data.earliestDate || data.latestDate || data.timelineSummary ? (
+              <div className="mt-2 rounded-xl border bg-gray-50 px-3 py-2 text-[11px] text-gray-600">
+                {(data.earliestDate || data.latestDate) && (
+                  <p className="font-medium text-gray-800">
+                    {data.earliestDate || "?"} – {data.latestDate || "?"}
+                  </p>
+                )}
+                {data.timelineSummary && <p className="mt-1 whitespace-pre-wrap">{data.timelineSummary}</p>}
+              </div>
+            ) : (
+              <p className="mt-1 text-[11px] text-gray-500">Ingen tidslinje tillgänglig.</p>
+            )}
+          </section>
+        </div>
+      )}
+    </div>
   );
 }

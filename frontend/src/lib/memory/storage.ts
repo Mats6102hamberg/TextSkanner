@@ -1,4 +1,4 @@
-import { MemoryBook, MemoryMode } from "./types";
+import { FamilyMagic, MemoryBook, MemoryMode } from "./types";
 
 const STORAGE_KEY = "textskanner.memory.projects.v1";
 
@@ -11,6 +11,7 @@ export interface StoredMemoryProject {
   createdAt: string;
   updatedAt: string;
   book: MemoryBook;
+  familyMagic?: FamilyMagic;
 }
 
 function isBrowser() {
@@ -55,6 +56,7 @@ export function createMemoryProject(input: {
   timeSpan?: string;
   mode: MemoryMode;
   book: MemoryBook;
+  familyMagic?: FamilyMagic;
 }): StoredMemoryProject {
   const now = new Date().toISOString();
   const project: StoredMemoryProject = {
@@ -66,6 +68,7 @@ export function createMemoryProject(input: {
     createdAt: now,
     updatedAt: now,
     book: input.book,
+    familyMagic: input.familyMagic,
   };
 
   const all = readAllProjects();

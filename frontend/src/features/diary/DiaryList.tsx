@@ -7,7 +7,7 @@ import { v4 as uuid } from "uuid";
 import { useDiaryEntries } from "@/features/diary/hooks/useDiaryEntries";
 import type { DiaryEntry } from "@/types/diary";
 import { deleteDiaryEntry } from "@/services/diaryApi";
-import { generateMemoryBook } from "@/lib/memory/client";
+import { generateMemoryBook, generateFamilyMagic } from "@/lib/memory/client";
 import { createMemoryProject } from "@/lib/memory/storage";
 import type { MemorySourceEntry } from "@/lib/memory/types";
 
@@ -66,6 +66,7 @@ export function DiaryList({ entries: externalEntries, initialEntries }: DiaryLis
 
       const entriesPayload = mapDiaryEntriesToMemoryEntries(selectedEntries);
       const book = await generateMemoryBook(entriesPayload, "structured");
+      const familyMagic = await generateFamilyMagic(entriesPayload);
       const id = uuid();
       const title =
         selectedEntries.length === 1
@@ -78,7 +79,8 @@ export function DiaryList({ entries: externalEntries, initialEntries }: DiaryLis
         personName: undefined,
         timeSpan: undefined,
         mode: book.mode,
-        book
+        book,
+        familyMagic
       });
 
       setSelectedIds([]);
