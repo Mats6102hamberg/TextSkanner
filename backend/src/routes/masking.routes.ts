@@ -1,5 +1,5 @@
 import { Router, Request, Response } from "express";
-import { maskText, MaskingOptions } from "../services/masking.service";
+import { maskText, MaskingOptions } from "../utils/masking";
 
 const router = Router();
 

@@ -5,7 +5,7 @@ import type {
 } from "@/types/contracts";
 
 const BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:4000/api";
+  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
 
 export type LanguageMode = "simplify" | "summarize" | "translate_en";
 
@@ -97,14 +97,18 @@ export async function scanDiaryPage(file: File): Promise<{ text: string }> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const res = await fetch(`${BASE_URL}/diary/scan`, {
-    method: "POST",
-    body: formData
-  });
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}/api/ocr`, {
+      method: "POST",
+      body: formData
+    });
+  } catch (err) {
+    throw new Error("Kunde inte nå servern. Är backend igång på port 3001?");
+  }
 
   if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "OCR-anrop misslyckades");
+    throw new Error(`OCR-motorn svarade med fel (status ${res.status}).`);
   }
 
   return res.json();

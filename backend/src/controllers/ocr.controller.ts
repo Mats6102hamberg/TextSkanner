@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import { z } from "zod";
-import { maskText, getMaskingStats } from "../services/masking.service";
+import { maskText, getMaskingStats } from "../utils/masking";
 
 const ocrRequestSchema = z.object({
   imageData: z.string().optional(),
