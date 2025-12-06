@@ -93,23 +93,45 @@ export async function apiPost(path: string, body: unknown) {
   return handleResponse(res);
 }
 
-export async function scanDiaryPage(file: File): Promise<{ text: string }> {
+export type OcrScanResponse = {
+  ok?: boolean;
+  rawText?: string;
+  maskedText?: string;
+  summary?: string | null;
+  warnings?: string[];
+  error?: string;
+};
+
+export async function scanDiaryPage(file: File): Promise<OcrScanResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
   let res: Response;
   try {
-    res = await fetch(`${BASE_URL}/api/ocr`, {
+    res = await fetch("/api/ocr", {
       method: "POST",
       body: formData
     });
   } catch (err) {
-    throw new Error("Kunde inte nå servern. Är backend igång på port 3001?");
+    throw new Error("Kunde inte nå Dagboksscannern. Försök igen om en stund.");
   }
 
-  if (!res.ok) {
-    throw new Error(`OCR-motorn svarade med fel (status ${res.status}).`);
+  let data: OcrScanResponse;
+  try {
+    data = await res.json();
+  } catch (parseError) {
+    data = { ok: false, error: "Kunde inte tolka svaret från Dagboksscannern." };
   }
 
-  return res.json();
+  if (!res.ok || data.ok === false) {
+    throw new Error(
+      data.error || `Dagboksscannern svarade med fel (status ${res.status}).`
+    );
+  }
+
+  if (!data.rawText || !data.rawText.trim()) {
+    throw new Error("OCR hittade ingen text i PDF:en.");
+  }
+
+  return data;
 }

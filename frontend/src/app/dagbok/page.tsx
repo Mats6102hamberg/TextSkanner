@@ -11,11 +11,12 @@ import {
   CardContent
 } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { scanDiaryPage } from "@/services/apiClient";
+import { scanDiaryPage, type OcrScanResponse } from "@/services/apiClient";
 
 export default function DagbokPage() {
   const [file, setFile] = useState<File | null>(null);
-  const [resultText, setResultText] = useState("");
+  const [editableText, setEditableText] = useState("");
+  const [result, setResult] = useState<OcrScanResponse | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -28,16 +29,13 @@ export default function DagbokPage() {
     try {
       setIsScanning(true);
       setError(null);
-      setResultText("");
+      setEditableText("");
+      setResult(null);
 
       const response = await scanDiaryPage(file);
-      const text = response?.text ?? "";
-
-      if (!text) {
-        throw new Error("OCR gav inget textresultat.");
-      }
-
-      setResultText(text);
+      const text = response?.rawText ?? "";
+      setEditableText(text);
+      setResult(response);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Något gick fel";
       setError(message);
@@ -65,7 +63,7 @@ export default function DagbokPage() {
                 accept="image/*,.pdf"
                 onChange={(event) => {
                   setFile(event.target.files?.[0] ?? null);
-                  setResultText("");
+                  setEditableText("");
                   setError(null);
                 }}
                 className="w-full rounded-xl border border-[#CBD5DF] bg-white px-3 py-2 text-sm file:mr-4 file:cursor-pointer file:rounded-full file:border-0 file:bg-[#1E4A7A] file:px-4 file:py-2 file:text-white"
@@ -77,7 +75,11 @@ export default function DagbokPage() {
               {isScanning ? "Skannar..." : "Skanna dagbokssida"}
             </Button>
 
-            {error && <p className="text-sm font-semibold text-[#B42318]">{error}</p>}
+            {error && (
+              <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+                {error}
+              </div>
+            )}
 
             <p className="text-xs text-[#6B7280]">
               Tips: använd dagsljus eller en jämn belysning för bästa resultat. Du bestämmer själv vad som sparas i efterhand.
@@ -120,13 +122,43 @@ export default function DagbokPage() {
             <CardTitle>Resultat</CardTitle>
             <CardDescription>Redigera texten direkt eller kopiera den vidare.</CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-4">
             <textarea
-              value={resultText}
-              onChange={(event) => setResultText(event.target.value)}
+              value={editableText}
+              onChange={(event) => setEditableText(event.target.value)}
               placeholder="Här visas texten från din senaste skanning."
               className="min-h-[240px] w-full rounded-2xl border border-[#E2E6EB] bg-[#F9FAFB] px-4 py-3 text-sm text-[#111111] focus:border-[#4A90E2] focus:outline-none focus:ring-2 focus:ring-[#4A90E2]/30"
             />
+
+            {result?.maskedText && result.maskedText !== editableText ? (
+              <div className="rounded-2xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-[#111111]">Maskerad text</p>
+                  <p className="text-xs text-[#6B7280]">Automatiskt förslag</p>
+                </div>
+                <pre className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap text-sm text-[#1F2937]">
+                  {result.maskedText}
+                </pre>
+              </div>
+            ) : null}
+
+            {result?.summary ? (
+              <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm text-[#1F2937]">
+                <p className="font-semibold text-indigo-900">Sammanfattning</p>
+                <p className="mt-2 whitespace-pre-line">{result.summary}</p>
+              </div>
+            ) : null}
+
+            {result?.warnings?.length ? (
+              <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <p className="font-semibold">Notiser från Dagboksscannern</p>
+                <ul className="mt-2 list-disc space-y-1 pl-5">
+                  {result.warnings.map((warning, index) => (
+                    <li key={`warning-${index}`}>{warning}</li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
@@ -138,7 +170,7 @@ export default function DagbokPage() {
           <CardContent className="space-y-3 text-sm text-[#4B5563]">
             <p>• Skicka vidare till Språkverktyget för att förenkla texten.</p>
             <p>• Lägg in i Minnesbok för att skapa kapitel och struktur.</p>
-            <p>• Exportera som backup innan du arkiverar originalet.</p>
+            <p>• Exportera som PDF när du är nöjd med maskering och språk.</p>
           </CardContent>
         </Card>
       </section>
