@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import PDFDocument from "pdfkit";
+import type PDFKit from "pdfkit";
 
 import type { MemoryBook } from "@/lib/memory/types";
 
@@ -86,7 +87,7 @@ async function renderMemoryBookPdf(book: MemoryBook, meta: PdfMeta): Promise<Buf
 }
 
 function addChapterPage(
-  doc: PDFDocument,
+  doc: PDFKit.PDFDocument,
   chapter: MemoryBook["chapters"][number],
   chapterIndex: number
 ) {
@@ -123,7 +124,7 @@ function addChapterPage(
   });
 }
 
-function addNotesPage(doc: PDFDocument) {
+function addNotesPage(doc: PDFKit.PDFDocument) {
   doc.fontSize(18).fillColor("#111111").text("Anteckningssida", { align: "left" });
   doc.moveDown();
   doc
