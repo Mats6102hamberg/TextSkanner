@@ -93,6 +93,25 @@ export default function TextscannerPage() {
               Gå till minnesböcker
             </Link>
           </div>
+
+          {/* Maskeringsverktyg */}
+          <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
+            <h3 className="text-sm font-semibold text-gray-900">Maskeringsverktyg</h3>
+            <p className="mt-1 text-xs text-gray-600">
+              Testa hur personuppgifter, känsliga detaljer och identifierbar information maskeras
+              automatiskt innan analys. Perfekt för både privatpersoner och verksamheter som måste
+              skydda känsliga uppgifter.
+            </p>
+
+            <div className="mt-4">
+              <Link
+                href="/textscanner/masking"
+                className="inline-flex items-center rounded-md bg-slate-800 px-3 py-2 text-xs font-medium text-white transition hover:bg-slate-700"
+              >
+                Testa maskeringsverktyget
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </main>
