@@ -1,20 +1,42 @@
 "use client";
 
+import { useState } from "react";
+
 import { PageShell } from "@/components/layout/PageShell";
 import { ContractAnalyzerPanel } from "@/components/ContractAnalyzerPanel";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { analyzeContract } from "@/services/apiClient";
-import type { AnalyzeMode } from "@/types/contracts";
+import type { AnalyzeMode, ContractAnalysisSummaryResult } from "@/types/contracts";
 
 export default function AvtalPage() {
+  const [result, setResult] = useState<ContractAnalysisSummaryResult | null>(null);
+
   async function handleAnalyze(file: File, mode: AnalyzeMode) {
-    const result = await analyzeContract(file, mode);
+    setResult(null);
+    const analysis = await analyzeContract(file, mode);
+    setResult(analysis);
     return {
-      summary: result.summary,
-      risks: result.risks ?? [],
-      keyPoints: result.keyPoints ?? []
+      summary: analysis.summary,
+      risks: analysis.risks ?? [],
+      keyPoints: analysis.keyPoints ?? []
     };
+  }
+
+  function handleSendToProspero() {
+    if (!result?.finance) {
+      alert("Ingen ekonomisk data kunde extraheras från avtalet.");
+      return;
+    }
+
+    try {
+      const payload = encodeURIComponent(JSON.stringify(result.finance));
+      const url = `https://prospero.example.com/import?source=avtalskollen&contract=${payload}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      console.error("Kunde inte skapa Prospero-länk:", err);
+      alert("Kunde inte skapa länk till Prospero.");
+    }
   }
 
   return (
@@ -67,6 +89,68 @@ export default function AvtalPage() {
           <ContractAnalyzerPanel onAnalyze={handleAnalyze} savedContracts={[]} />
         </Card>
       </section>
+
+      {result?.finance && (
+        <section className="rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-sm text-gray-900">
+          <h2 className="text-sm font-semibold text-emerald-900">
+            Ekonomisk översikt
+          </h2>
+          <dl className="mt-2 space-y-1">
+            <div className="flex justify-between gap-4">
+              <dt className="text-gray-600">Namn</dt>
+              <dd className="font-medium">{result.finance.name}</dd>
+            </div>
+            <div className="flex justify-between gap-4">
+              <dt className="text-gray-600">Kategori</dt>
+              <dd className="font-medium">
+                {result.finance.category === "boende"
+                  ? "Boende"
+                  : result.finance.category === "abonnemang"
+                  ? "Abonnemang"
+                  : result.finance.category === "lån"
+                  ? "Lån"
+                  : result.finance.category === "bil"
+                  ? "Bil"
+                  : "Övrigt"}
+              </dd>
+            </div>
+            {typeof result.finance.fixedMonthlyCost === "number" && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-600">Månadskostnad</dt>
+                <dd className="font-medium">
+                  {result.finance.fixedMonthlyCost} kr/mån
+                </dd>
+              </div>
+            )}
+            {typeof result.finance.bindingMonths === "number" && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-600">Bindningstid</dt>
+                <dd className="font-medium">
+                  {result.finance.bindingMonths} månader
+                </dd>
+              </div>
+            )}
+            {typeof result.finance.upfrontFee === "number" && (
+              <div className="flex justify-between gap-4">
+                <dt className="text-gray-600">Startavgift</dt>
+                <dd className="font-medium">
+                  {result.finance.upfrontFee} kr
+                </dd>
+              </div>
+            )}
+          </dl>
+        </section>
+      )}
+
+      {result?.finance && (
+        <button
+          type="button"
+          onClick={handleSendToProspero}
+          className="inline-flex items-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+        >
+          Se hur avtalet påverkar din ekonomi i Prospero
+        </button>
+      )}
 
       <section className="grid gap-6 md:grid-cols-2">
         <Card>

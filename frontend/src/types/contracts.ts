@@ -17,6 +17,30 @@ export interface ContractSummaries {
   explainLike12: string;
 }
 
+export type ContractFinanceCategory =
+  | "boende"
+  | "abonnemang"
+  | "lån"
+  | "bil"
+  | "övrigt";
+
+export type ContractFinanceIndexation = "none" | "cpi" | "other";
+
+export interface ContractFinanceSnapshot {
+  name: string;
+  category: ContractFinanceCategory;
+  currency: "SEK";
+  fixedMonthlyCost?: number;
+  upfrontFee?: number;
+  variableCostDescription?: string;
+  startDate?: string;
+  endDate?: string;
+  bindingMonths?: number;
+  noticePeriodMonths?: number;
+  indexation?: ContractFinanceIndexation;
+  importantClauses?: string[];
+}
+
 export interface ContractAnalysisResult {
   language: string;
   overallRisk: ContractRiskLevel;
@@ -26,6 +50,7 @@ export interface ContractAnalysisResult {
   detectedParties?: string[];
   detectedDates?: string[];
   detectedAmounts?: string[];
+  finance?: ContractFinanceSnapshot | null;
 }
 
 export type AnalyzeMode = "quick" | "save";
@@ -34,6 +59,7 @@ export interface ContractAnalysisSummaryResult {
   summary: string;
   risks: string[];
   keyPoints: string[];
+  finance?: ContractFinanceSnapshot | null;
 }
 
 export interface SavedContractSummary {

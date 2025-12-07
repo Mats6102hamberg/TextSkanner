@@ -3,12 +3,37 @@ import { NextRequest, NextResponse } from "next/server";
 import { runTextscannerTask } from "@/lib/textscanner/core";
 import type { TextscannerTaskResult } from "@/lib/textscanner/types";
 
+type ContractFinanceCategory =
+  | "boende"
+  | "abonnemang"
+  | "lån"
+  | "bil"
+  | "övrigt";
+
+type ContractFinanceIndexation = "none" | "cpi" | "other";
+
+type ContractFinanceSnapshot = {
+  name: string;
+  category: ContractFinanceCategory;
+  currency: "SEK";
+  fixedMonthlyCost?: number;
+  upfrontFee?: number;
+  variableCostDescription?: string;
+  startDate?: string;
+  endDate?: string;
+  bindingMonths?: number;
+  noticePeriodMonths?: number;
+  indexation?: ContractFinanceIndexation;
+  importantClauses?: string[];
+};
+
 type ContractMode =
   | "summary"
   | "risk"
   | "clarity"
   | "party_balance"
-  | "mask";
+  | "mask"
+  | "finance";
 
 type ModePayload = {
   text?: unknown;
@@ -21,7 +46,8 @@ const DEFAULT_MODES: ContractMode[] = [
   "risk",
   "clarity",
   "party_balance",
-  "mask"
+  "mask",
+  "finance"
 ];
 
 const MODE_TO_TASK = {
@@ -29,7 +55,8 @@ const MODE_TO_TASK = {
   risk: "contract_risk",
   clarity: "contract_clarity",
   party_balance: "contract_party_balance",
-  mask: "contract_mask_suggestions"
+  mask: "contract_mask_suggestions",
+  finance: "contract_finance"
 } as const;
 
 type AggregatedData = {
@@ -40,6 +67,7 @@ type AggregatedData = {
   partyBalance?: string;
   maskSuggestions?: string[];
   warnings?: string[];
+  finance?: ContractFinanceSnapshot | null;
 };
 
 export async function POST(request: NextRequest) {
@@ -108,7 +136,7 @@ function normalizeModes(input: unknown): ContractMode[] {
 }
 
 function isContractMode(value: string): value is ContractMode {
-  return ["summary", "risk", "clarity", "party_balance", "mask"].includes(
+  return ["summary", "risk", "clarity", "party_balance", "mask", "finance"].includes(
     value
   );
 }
@@ -161,6 +189,15 @@ function mergeResult(
         sections?.maskSuggestions || splitLines(result.text)
       );
       break;
+    case "finance": {
+      const normalizedFinance = normalizeFinance(sections?.finance);
+      if (normalizedFinance || sections?.finance === null) {
+        aggregated.finance = normalizedFinance;
+      } else if (aggregated.finance === undefined) {
+        aggregated.finance = null;
+      }
+      break;
+    }
   }
 }
 
@@ -189,4 +226,69 @@ function splitLines(text?: string) {
     .map((line) => line.trim())
     .filter(Boolean);
   return items.length ? items : undefined;
+}
+
+function normalizeFinance(input: unknown): ContractFinanceSnapshot | null {
+  if (!input || typeof input !== "object") {
+    return null;
+  }
+
+  const finance = input as Record<string, unknown>;
+
+  const name =
+    typeof finance.name === "string" && finance.name.trim().length
+      ? finance.name.trim()
+      : "Avtal";
+
+  const categoryValues: ContractFinanceCategory[] = [
+    "boende",
+    "abonnemang",
+    "lån",
+    "bil",
+    "övrigt"
+  ];
+  const categoryInput =
+    typeof finance.category === "string" ? finance.category.trim() : "";
+  const category = categoryValues.includes(categoryInput as ContractFinanceCategory)
+    ? (categoryInput as ContractFinanceCategory)
+    : "övrigt";
+
+  const currency: "SEK" = "SEK";
+
+  const toNumber = (val: unknown): number | undefined =>
+    typeof val === "number" && !Number.isNaN(val) ? val : undefined;
+
+  const toStringOrUndefined = (val: unknown): string | undefined =>
+    typeof val === "string" && val.trim().length ? val.trim() : undefined;
+
+  const toStringArray = (val: unknown): string[] =>
+    Array.isArray(val)
+      ? val
+          .map((entry) => (typeof entry === "string" ? entry.trim() : ""))
+          .filter(Boolean)
+      : [];
+
+  const indexationValues: ContractFinanceIndexation[] = ["none", "cpi", "other"];
+  const indexationInput =
+    typeof finance.indexation === "string" ? finance.indexation.trim() : "";
+  const indexation = indexationValues.includes(indexationInput as ContractFinanceIndexation)
+    ? (indexationInput as ContractFinanceIndexation)
+    : "none";
+
+  return {
+    name,
+    category,
+    currency,
+    fixedMonthlyCost: toNumber(finance.fixedMonthlyCost),
+    upfrontFee: toNumber(finance.upfrontFee),
+    variableCostDescription: toStringOrUndefined(
+      finance.variableCostDescription
+    ),
+    startDate: toStringOrUndefined(finance.startDate),
+    endDate: toStringOrUndefined(finance.endDate),
+    bindingMonths: toNumber(finance.bindingMonths),
+    noticePeriodMonths: toNumber(finance.noticePeriodMonths),
+    indexation,
+    importantClauses: toStringArray(finance.importantClauses)
+  };
 }

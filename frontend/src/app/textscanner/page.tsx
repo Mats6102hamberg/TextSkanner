@@ -2,6 +2,40 @@
 
 import Link from "next/link";
 
+const primaryCtas = [
+  {
+    label: "Kom igång med dagboksscanner",
+    href: "/dagbok",
+    className:
+      "bg-indigo-600 text-white hover:bg-indigo-700"
+  },
+  {
+    label: "Testa avtalsanalys",
+    href: "/avtalskollen",
+    className:
+      "bg-emerald-600 text-white hover:bg-emerald-700"
+  },
+  {
+    label: "Testa maskering",
+    href: "/maskering",
+    className:
+      "bg-slate-900 text-white hover:bg-slate-800"
+  },
+  {
+    label: "Skapa minnesbok",
+    href: "/minnesbok",
+    className:
+      "bg-amber-600 text-white hover:bg-amber-700"
+  },
+  {
+    label: "Öppna Prospero",
+    href: "https://prospero.example.com",
+    className:
+      "bg-slate-900 text-white hover:bg-slate-800",
+    external: true
+  }
+];
+
 export default function TextscannerPage() {
   return (
     <main className="mx-auto flex min-h-[80vh] max-w-3xl flex-col gap-8 px-4 py-10">
@@ -16,6 +50,20 @@ export default function TextscannerPage() {
           Skanna dagböcker, analysera avtal, skapa språkhjälp och minnesböcker
           – i samma plattform. För både privatpersoner och företag.
         </p>
+
+        <div className="mt-4 flex flex-wrap gap-3">
+          {primaryCtas.map((cta) => (
+            <Link
+              key={cta.href}
+              href={cta.href}
+              target={cta.external ? "_blank" : undefined}
+              rel={cta.external ? "noopener noreferrer" : undefined}
+              className={`inline-flex items-center rounded-xl px-4 py-2 text-xs font-semibold transition ${cta.className}`}
+            >
+              {cta.label}
+            </Link>
+          ))}
+        </div>
       </header>
 
       <section className="space-y-3 rounded-2xl border bg-white p-4 shadow-sm">
@@ -76,41 +124,50 @@ export default function TextscannerPage() {
             </Link>
           </div>
 
-          {/* Minnesböcker */}
+          {/* Maskeringsverktyg */}
           <div className="rounded-xl border bg-gray-50 p-3">
-            <h3 className="text-sm font-semibold text-gray-900">
-              Minnesböcker & Släktmagi
-            </h3>
+            <h3 className="text-sm font-semibold text-gray-900">Maskeringsverktyg</h3>
             <p className="mt-1 text-xs text-gray-600">
-              Förvandla dagböcker till strukturerade minnesböcker med kapitel,
-              släktöversikt och PDF-export. Perfekt för livsberättelser och
-              släktprojekt.
+              Maskera personnummer, adresser och annan känslig information i dokument innan du delar dem.
+            </p>
+            <Link
+              href="/maskering"
+              className="mt-2 inline-flex items-center rounded-lg bg-slate-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-slate-800"
+            >
+              Gå till maskering
+            </Link>
+          </div>
+
+          {/* Minnesbok */}
+          <div className="rounded-xl border bg-gray-50 p-3">
+            <h3 className="text-sm font-semibold text-gray-900">Minnesbok</h3>
+            <p className="mt-1 text-xs text-gray-600">
+              Skapa en strukturerad minnesbok av dagboksanteckningar – med kapitel, tidslinje, personer och teman.
             </p>
             <Link
               href="/minnesbok"
               className="mt-2 inline-flex items-center rounded-lg bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
             >
-              Gå till minnesböcker
+              Öppna Minnesboken
             </Link>
           </div>
 
-          {/* Maskeringsverktyg */}
-          <div className="rounded-xl border border-slate-300 bg-white p-4 shadow-sm">
-            <h3 className="text-sm font-semibold text-gray-900">Maskeringsverktyg</h3>
-            <p className="mt-1 text-xs text-gray-600">
-              Testa hur personuppgifter, känsliga detaljer och identifierbar information maskeras
-              automatiskt innan analys. Perfekt för både privatpersoner och verksamheter som måste
-              skydda känsliga uppgifter.
+          {/* Prospero */}
+          <div className="rounded-xl border bg-white p-4 text-sm">
+            <h3 className="text-sm font-semibold text-gray-900">
+              Prospero – ekonomiplanering
+            </h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Simulera hur avtal, inkomster och sparande påverkar din framtida ekonomi. Prospero hjälper dig att fatta lugna, genomtänkta beslut.
             </p>
-
-            <div className="mt-4">
-              <Link
-                href="/textscanner/masking"
-                className="inline-flex items-center rounded-md bg-slate-800 px-3 py-2 text-xs font-medium text-white transition hover:bg-slate-700"
-              >
-                Testa maskeringsverktyget
-              </Link>
-            </div>
+            <Link
+              href="https://prospero.example.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="mt-3 inline-flex items-center text-sm font-medium text-indigo-600 hover:text-indigo-700"
+            >
+              Öppna Prospero
+            </Link>
           </div>
         </div>
       </section>

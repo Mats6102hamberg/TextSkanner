@@ -1,3 +1,27 @@
+export type ContractFinanceCategory =
+  | "boende"
+  | "abonnemang"
+  | "lån"
+  | "bil"
+  | "övrigt";
+
+export type ContractFinanceIndexation = "none" | "cpi" | "other";
+
+export interface ContractFinanceSnapshot {
+  name: string;
+  category: ContractFinanceCategory;
+  currency: "SEK";
+  fixedMonthlyCost?: number;
+  upfrontFee?: number;
+  variableCostDescription?: string;
+  startDate?: string;
+  endDate?: string;
+  bindingMonths?: number;
+  noticePeriodMonths?: number;
+  indexation?: ContractFinanceIndexation;
+  importantClauses?: string[];
+}
+
 export type TextscannerTaskType =
   | "diary_original"
   | "diary_readable"
@@ -7,6 +31,7 @@ export type TextscannerTaskType =
   | "contract_clarity"
   | "contract_party_balance"
   | "contract_mask_suggestions"
+  | "contract_finance"
   | "generic_mask_suggestions";
 
 export interface TextscannerTaskInput {
@@ -25,6 +50,7 @@ export interface TextscannerTaskResult {
     unclearClauses?: string[];
     partyBalance?: string;
     maskSuggestions?: string[];
+    finance?: ContractFinanceSnapshot | null;
   };
   warnings?: string[];
   debugInfo?: Record<string, unknown>;
