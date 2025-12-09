@@ -1,11 +1,9 @@
 import type {
   AnalyzeMode,
-  ContractAnalysisResult,
   ContractAnalysisSummaryResult
 } from "@/types/contracts";
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3001";
+const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
 export type LanguageMode = "simplify" | "summarize" | "translate_en";
 
@@ -34,53 +32,68 @@ export async function processLanguage(
   return res.json();
 }
 
-function mapToSummaryResult(data: ContractAnalysisResult): ContractAnalysisSummaryResult {
-  const summary =
-    data?.summaries?.short ||
-    data?.summaries?.medium ||
-    "Ingen sammanfattning kunde genereras.";
+type ContractAnalyzeEnvelope = {
+  ok: boolean;
+  data?: ContractAnalysisSummaryResult;
+  warnings?: string[];
+  error?: string;
+};
 
-  const risks = (data?.sections || [])
-    .filter((section) => section?.riskLevel && section?.text)
-    .map((section) => {
-      const title = section.heading || section.category || "Sektion";
-      const reason = section.riskReason ? ` – ${section.riskReason}` : "";
-      return `${title}: ${section.riskLevel.toUpperCase()}${reason}`;
-    });
-
-  const keyPoints = (data?.sections || [])
-    .slice(0, 5)
-    .map((section) => section.text.trim())
-    .filter(Boolean);
-
-  return {
-    summary,
-    risks,
-    keyPoints,
-    finance: data?.finance ?? null
-  };
+function isContractAnalyzeEnvelope(
+  value: unknown
+): value is ContractAnalyzeEnvelope {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "ok" in value &&
+    typeof (value as Record<string, unknown>).ok === "boolean"
+  );
 }
 
 export async function analyzeContract(
   file: File,
-  mode: AnalyzeMode
+  mode: AnalyzeMode,
+  saveMode: "temp" | "persist" = "temp"
 ): Promise<ContractAnalysisSummaryResult> {
-  const form = new FormData();
-  form.append("file", file);
-  form.append("mode", mode);
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("mode", mode);
+  formData.append("saveMode", saveMode);
 
-  const res = await fetch(`${BASE_URL}/contracts/analyze`, {
-    method: "POST",
-    body: form
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(text || "Kunde inte analysera avtalet");
+  let res: Response;
+  try {
+    res = await fetch("/api/contracts/analyze", {
+      method: "POST",
+      body: formData
+    });
+  } catch (err) {
+    console.error(err);
+    throw new Error("Kunde inte nå Avtalskollen. Kontrollera uppkopplingen.");
   }
 
-  const data: ContractAnalysisResult = await res.json();
-  return mapToSummaryResult(data);
+  let parsed: unknown = null;
+  try {
+    parsed = await res.json();
+  } catch {
+    parsed = null;
+  }
+
+  if (!res.ok) {
+    const errorMessage =
+      (parsed && typeof parsed === "object" && "error" in parsed && typeof (parsed as any).error === "string"
+        ? ((parsed as any).error as string)
+        : "Avtalsanalysen misslyckades.");
+    throw new Error(errorMessage);
+  }
+
+  if (isContractAnalyzeEnvelope(parsed)) {
+    if (!parsed.ok || !parsed.data) {
+      throw new Error(parsed.error ?? "Avtalsanalysen misslyckades.");
+    }
+    return parsed.data;
+  }
+
+  return parsed as ContractAnalysisSummaryResult;
 }
 
 export async function apiPost(path: string, body: unknown) {

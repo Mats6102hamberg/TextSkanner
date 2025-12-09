@@ -14,6 +14,7 @@ interface ContractAnalysisData {
   partyBalance?: string;
   maskSuggestions?: string[];
   warnings?: string[];
+  shareToProspero?: boolean;
 }
 
 interface ApiResponse {
@@ -44,6 +45,7 @@ export default function ContractAnalysisPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ContractAnalysisData | null>(null);
+  const [shareToProspero, setShareToProspero] = useState(false);
 
   const selectedModes = useMemo(() => {
     const active = MODE_OPTIONS.filter((option) => modes[option.key]).map(
@@ -69,7 +71,8 @@ export default function ContractAnalysisPage() {
       const payload = {
         text: trimmedText,
         language: language.trim() || DEFAULT_LANGUAGE,
-        modes: selectedModes
+        modes: selectedModes,
+        shareToProspero
       };
 
       const response = await fetch(
@@ -165,16 +168,38 @@ export default function ContractAnalysisPage() {
 
         {error && <p className="text-sm text-red-600">{error}</p>}
 
-        <div className="space-y-2">
-          <button
-            type="submit"
-            disabled={loading}
-            className="rounded bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300"
-          >
-            {loading ? "Analyserar..." : "Analysera avtalet"}
-          </button>
-          {loading && (
-            <p className="text-sm text-gray-500">Analyserar avtalet, vänta...</p>
+        <div className="space-y-4">
+          <div className="flex items-center">
+            <input
+              id="share-to-prospero"
+              type="checkbox"
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              checked={shareToProspero}
+              onChange={(e) => setShareToProspero(e.target.checked)}
+            />
+            <label htmlFor="share-to-prospero" className="ml-2 block text-sm text-gray-700">
+              Dela strukturerad data till Prospero
+            </label>
+          </div>
+          
+          <div className="space-y-2">
+            <button
+              type="submit"
+              disabled={loading}
+              className="rounded bg-indigo-600 px-4 py-2 text-white shadow hover:bg-indigo-500 disabled:cursor-not-allowed disabled:bg-indigo-300"
+            >
+              {loading ? "Analyserar..." : "Analysera avtalet"}
+            </button>
+            {loading && (
+              <p className="text-sm text-gray-500">Analyserar avtalet, vänta...</p>
+            )}
+          </div>
+          
+          {shareToProspero && (
+            <p className="text-xs text-gray-500">
+              Genom att aktivera den här funktionen godkänner du att vi delar den strukturerade datan med Prospero.
+              Endast nödvändig information för att förbättra tjänsten delas.
+            </p>
           )}
         </div>
       </form>

@@ -7,15 +7,31 @@ import { ContractAnalyzerPanel } from "@/components/ContractAnalyzerPanel";
 import { Button } from "@/components/ui/Button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/Card";
 import { analyzeContract } from "@/services/apiClient";
-import type { AnalyzeMode, ContractAnalysisSummaryResult } from "@/types/contracts";
+import type {
+  AnalyzeMode,
+  ContractAnalysisSummaryResult
+} from "@/types/contracts";
+
+type ProsperoSubmissionStatus = "idle" | "sending" | "sent" | "error";
 
 export default function AvtalPage() {
   const [result, setResult] = useState<ContractAnalysisSummaryResult | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [documentId, setDocumentId] = useState<string | null>(null);
+  const [prosperoConsent, setProsperoConsent] = useState(false);
+  const [prosperoStatus, setProsperoStatus] = useState<ProsperoSubmissionStatus>("idle");
+  const [prosperoError, setProsperoError] = useState<string | null>(null);
 
   async function handleAnalyze(file: File, mode: AnalyzeMode) {
     setResult(null);
+    setDocumentId(null);
+    setProsperoConsent(false);
+    setProsperoStatus("idle");
+    setProsperoError(null);
     const analysis = await analyzeContract(file, mode);
     setResult(analysis);
+    setDocumentId(globalThis.crypto?.randomUUID?.() ?? `${Date.now()}`);
     return {
       summary: analysis.summary,
       risks: analysis.risks ?? [],
@@ -23,19 +39,45 @@ export default function AvtalPage() {
     };
   }
 
-  function handleSendToProspero() {
-    if (!result?.finance) {
-      alert("Ingen ekonomisk data kunde extraheras från avtalet.");
+  async function handleSendToProspero() {
+    if (!result) {
+      setProsperoError("Ingen analys att skicka.");
+      return;
+    }
+    if (!documentId) {
+      setProsperoError("Dokumentet saknar id. Kör om analysen och försök igen.");
+      return;
+    }
+    if (!prosperoConsent) {
+      setProsperoError("Godkänn delningen innan du skickar.");
       return;
     }
 
+    setProsperoStatus("sending");
+    setProsperoError(null);
+
     try {
-      const payload = encodeURIComponent(JSON.stringify(result.finance));
-      const url = `https://prospero.example.com/import?source=avtalskollen&contract=${payload}`;
-      window.open(url, "_blank", "noopener,noreferrer");
+      const res = await fetch("/api/prospero/contracts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ documentId, analysis: result })
+      });
+
+      const data = (await res.json().catch(() => null)) as
+        | { ok?: boolean; error?: string }
+        | null;
+
+      if (!res.ok || !data?.ok) {
+        throw new Error(data?.error ?? "Misslyckades att skicka avtalet.");
+      }
+
+      setProsperoStatus("sent");
     } catch (err) {
-      console.error("Kunde inte skapa Prospero-länk:", err);
-      alert("Kunde inte skapa länk till Prospero.");
+      console.error("Skicka till Prospero misslyckades", err);
+      setProsperoStatus("error");
+      setProsperoError(
+        err instanceof Error ? err.message : "Något gick fel vid exporten."
+      );
     }
   }
 
@@ -86,7 +128,14 @@ export default function AvtalPage() {
 
       <section id="analyzer">
         <Card>
-          <ContractAnalyzerPanel onAnalyze={handleAnalyze} savedContracts={[]} />
+          <ContractAnalyzerPanel
+            file={file}
+            onFileChange={setFile}
+            error={error}
+            onErrorChange={setError}
+            onAnalyze={handleAnalyze}
+            savedContracts={[]}
+          />
         </Card>
       </section>
 
@@ -142,14 +191,15 @@ export default function AvtalPage() {
         </section>
       )}
 
-      {result?.finance && (
-        <button
-          type="button"
-          onClick={handleSendToProspero}
-          className="inline-flex items-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
-        >
-          Se hur avtalet påverkar din ekonomi i Prospero
-        </button>
+      {result && (
+        <ProsperoExportPanel
+          consent={prosperoConsent}
+          onConsentChange={setProsperoConsent}
+          status={prosperoStatus}
+          onSend={handleSendToProspero}
+          disabled={!documentId}
+          error={prosperoError}
+        />
       )}
 
       <section className="grid gap-6 md:grid-cols-2">
@@ -178,5 +228,73 @@ export default function AvtalPage() {
         </Card>
       </section>
     </PageShell>
+  );
+}
+
+interface ProsperoExportPanelProps {
+  consent: boolean;
+  onConsentChange: (value: boolean) => void;
+  status: ProsperoSubmissionStatus;
+  onSend: () => void;
+  disabled?: boolean;
+  error: string | null;
+}
+
+function ProsperoExportPanel({
+  consent,
+  onConsentChange,
+  status,
+  onSend,
+  disabled,
+  error
+}: ProsperoExportPanelProps) {
+  const buttonLabel =
+    status === "sent"
+      ? "Avtalet är skickat till Prospero"
+      : status === "sending"
+        ? "Skickar…"
+        : "Skicka avtalet till Prospero";
+
+  const buttonDisabled =
+    disabled || !consent || status === "sending" || status === "sent";
+
+  return (
+    <section className="rounded-2xl border border-emerald-200 bg-white p-4 shadow-sm space-y-3">
+      <div>
+        <h2 className="text-lg font-semibold text-emerald-900">
+          Dela strukturerad data till Prospero
+        </h2>
+        <p className="text-sm text-slate-600">
+          Endast strukturerade fält – t.ex. lön, anställningsform, tjänstepension och risk-taggar –
+          skickas till Prospero för planering. Själva avtalet eller råtexten lämnar aldrig
+          Textscanner.
+        </p>
+      </div>
+
+      <label className="flex items-start gap-2 text-sm text-slate-700">
+        <input
+          type="checkbox"
+          className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+          checked={consent}
+          onChange={(event) => onConsentChange(event.target.checked)}
+        />
+        <span>
+          Jag godkänner att strukturerad avtalsdata (t.ex. lön, tjänstepension, anställningsform
+          och risk-taggar) delas med Prospero för ekonomisk planering. Själva avtalet skickas inte
+          vidare.
+        </span>
+      </label>
+
+      {error && <p className="text-sm text-red-600">{error}</p>}
+
+      <button
+        type="button"
+        onClick={onSend}
+        disabled={buttonDisabled}
+        className="inline-flex items-center justify-center rounded-2xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:cursor-not-allowed disabled:bg-slate-300"
+      >
+        {buttonLabel}
+      </button>
+    </section>
   );
 }

@@ -5,43 +5,48 @@ import { useState, type FC } from "react";
 import type { AnalyzeMode, ContractAnalysisSummaryResult, SavedContractSummary } from "@/types/contracts";
 
 interface ContractAnalyzerPanelProps {
+  file: File | null;
+  onFileChange: (file: File | null) => void;
+  error: string | null;
+  onErrorChange: (message: string | null) => void;
   onAnalyze: (file: File, mode: AnalyzeMode) => Promise<ContractAnalysisSummaryResult>;
   savedContracts?: SavedContractSummary[];
 }
 
 export const ContractAnalyzerPanel: FC<ContractAnalyzerPanelProps> = ({
+  file,
+  onFileChange,
+  error,
+  onErrorChange,
   onAnalyze,
   savedContracts = []
 }) => {
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [mode, setMode] = useState<AnalyzeMode>("quick");
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<ContractAnalysisSummaryResult | null>(null);
-  const [error, setError] = useState<string | null>(null);
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0] ?? null;
-    setSelectedFile(file);
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const nextFile = event.target.files?.[0] ?? null;
+    onFileChange(nextFile);
     setAnalysisResult(null);
-    setError(null);
+    onErrorChange(null);
   }
 
-  async function handleAnalyze(e: React.FormEvent) {
-    e.preventDefault();
-    if (!selectedFile) {
-      setError("Välj ett avtal eller dokument först.");
+  async function handleAnalyzeClick() {
+    if (!file) {
+      onErrorChange("Välj ett avtal eller dokument först.");
       return;
     }
-    setError(null);
+    onErrorChange(null);
     setIsAnalyzing(true);
     setAnalysisResult(null);
 
     try {
-      const result = await onAnalyze(selectedFile, mode);
+      const result = await onAnalyze(file, mode);
       setAnalysisResult(result);
     } catch (err) {
       console.error(err);
-      setError("Kunde inte analysera avtalet. Försök igen strax.");
+      onErrorChange("Kunde inte analysera avtalet. Försök igen strax.");
     } finally {
       setIsAnalyzing(false);
     }
@@ -73,7 +78,7 @@ export const ContractAnalyzerPanel: FC<ContractAnalyzerPanelProps> = ({
             </p>
           </div>
 
-          <form onSubmit={handleAnalyze} className="space-y-5">
+          <div className="space-y-5">
             <div className="space-y-2">
               <label className="block text-sm font-medium text-slate-700">Välj fil</label>
               <input
@@ -82,9 +87,9 @@ export const ContractAnalyzerPanel: FC<ContractAnalyzerPanelProps> = ({
                 onChange={handleFileChange}
                 className="block w-full text-sm text-slate-700 file:mr-4 file:rounded-md file:border-0 file:bg-blue-600 file:px-4 file:py-2 file:text-sm file:font-medium file:text-white hover:file:bg-blue-700 cursor-pointer"
               />
-              {selectedFile && (
+              {file && (
                 <p className="text-xs text-slate-500">
-                  Vald fil: <span className="font-medium">{selectedFile.name}</span>
+                  Vald fil: <span className="font-medium">{file.name}</span>
                 </p>
               )}
             </div>
@@ -128,8 +133,9 @@ export const ContractAnalyzerPanel: FC<ContractAnalyzerPanelProps> = ({
 
             <div className="flex items-center gap-3">
               <button
-                type="submit"
-                disabled={!selectedFile || isAnalyzing}
+                type="button"
+                onClick={handleAnalyzeClick}
+                disabled={!file || isAnalyzing}
                 className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300"
               >
                 {isAnalyzing ? "Analyserar..." : "Analysera avtal"}
@@ -140,7 +146,7 @@ export const ContractAnalyzerPanel: FC<ContractAnalyzerPanelProps> = ({
                   : "Läget är just nu: Spara i portalen."}
               </p>
             </div>
-          </form>
+          </div>
         </section>
 
         {analysisResult && (

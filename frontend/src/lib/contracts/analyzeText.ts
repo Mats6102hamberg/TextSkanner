@@ -1,46 +1,17 @@
-import { NextRequest, NextResponse } from "next/server";
-
 import { runTextscannerTask } from "@/lib/textscanner/core";
 import type { TextscannerTaskResult } from "@/lib/textscanner/types";
+import type {
+  ContractAnalysisSummaryResult,
+  ContractFinanceSnapshot
+} from "@/types/contracts";
 
-type ContractFinanceCategory =
-  | "boende"
-  | "abonnemang"
-  | "lån"
-  | "bil"
-  | "övrigt";
-
-type ContractFinanceIndexation = "none" | "cpi" | "other";
-
-type ContractFinanceSnapshot = {
-  name: string;
-  category: ContractFinanceCategory;
-  currency: "SEK";
-  fixedMonthlyCost?: number;
-  upfrontFee?: number;
-  variableCostDescription?: string;
-  startDate?: string;
-  endDate?: string;
-  bindingMonths?: number;
-  noticePeriodMonths?: number;
-  indexation?: ContractFinanceIndexation;
-  importantClauses?: string[];
-};
-
-type ContractMode =
+export type ContractMode =
   | "summary"
   | "risk"
   | "clarity"
   | "party_balance"
   | "mask"
   | "finance";
-
-type ModePayload = {
-  text?: unknown;
-  language?: unknown;
-  modes?: unknown;
-  shareToProspero?: boolean;
-};
 
 const DEFAULT_MODES: ContractMode[] = [
   "summary",
@@ -60,7 +31,7 @@ const MODE_TO_TASK = {
   finance: "contract_finance"
 } as const;
 
-type AggregatedData = {
+export type AggregatedData = {
   summary?: string;
   simpleExplanation?: string;
   risks?: string[];
@@ -69,107 +40,84 @@ type AggregatedData = {
   maskSuggestions?: string[];
   warnings?: string[];
   finance?: ContractFinanceSnapshot | null;
-  shareToProspero?: boolean;
 };
 
-export async function POST(request: NextRequest) {
-  try {
-    const rawBody: ModePayload = await request.json();
-    const text = typeof rawBody.text === "string" ? rawBody.text.trim() : "";
+export async function analyzeContractFromText(params: {
+  text: string;
+  language?: string;
+  modes?: unknown;
+}): Promise<{ aggregated: AggregatedData; warnings: string[] }> {
+  const { text, language, modes } = params;
+  const trimmed = text.trim();
 
-    if (!text) {
-      return NextResponse.json(
-        { ok: false, error: "Text is required." },
-        { status: 400 }
-      );
-    }
-
-    const language =
-      typeof rawBody.language === "string" && rawBody.language.trim().length
-        ? rawBody.language.trim()
-        : undefined;
-
-    const requestedModes = normalizeModes(rawBody.modes);
-    const aggregated: AggregatedData = {};
-    const allWarnings: string[] = [];
-
-    for (const mode of requestedModes) {
-      const taskType = MODE_TO_TASK[mode];
-      let result: TextscannerTaskResult | null = null;
-      try {
-        result = await runTextscannerTask({
-          type: taskType,
-          text,
-          language
-        });
-      } catch (taskError) {
-        console.error(`contract/analyze ${mode} task failed`, taskError);
-        if (mode === "finance") {
-          if (aggregated.finance === undefined) {
-            aggregated.finance = null;
-          }
-          continue;
-        }
-        throw taskError;
-      }
-
-      mergeResult(aggregated, result, mode);
-      if (Array.isArray(result.warnings)) {
-        allWarnings.push(...result.warnings);
-      }
-    }
-
-    if (allWarnings.length) {
-      aggregated.warnings = Array.from(new Set(allWarnings));
-    }
-
-    const responseData = { ...aggregated };
-    
-    // Om användaren har valt att dela med Prospero, skicka datan dit
-    if (rawBody.shareToProspero === true) {
-      try {
-        // Skapa ett unikt dokument-ID för denna analys
-        const documentId = `contract-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
-        
-        // Skapa en sammanfattning av analysen för Prospero
-        const prosperoPayload = {
-          documentId,
-          analysis: {
-            ...aggregated,
-            // Inkludera eventuella ytterligare fält som behövs för Prospero
-            originalText: text.substring(0, 5000), // Skicka bara de första 5000 tecknen
-            shareToProspero: true
-          }
-        };
-        
-        // Skicka till Prospero i bakgrunden (vi väntar inte på svaret)
-        fetch(`${process.env.NEXT_PUBLIC_APP_URL}/api/prospero/contracts`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(prosperoPayload),
-        }).catch(error => {
-          console.error('Failed to send data to Prospero:', error);
-          // Vi ignorerar fel här eftersom det inte ska påverka användarens upplevelse
-        });
-        
-        // Markera i svaret att datan har skickats till Prospero
-        responseData.shareToProspero = true;
-      } catch (error) {
-        console.error('Error preparing Prospero data:', error);
-        // Fortsätt även om något går fel med Prospero-integrationen
-      }
-    }
-    
-    return NextResponse.json({ ok: true, data: responseData });
-  } catch (error) {
-    console.error("contract/analyze failed", error);
-    return NextResponse.json(
-      { ok: false, error: "Något gick fel i Avtalskollen (serverfel)." },
-      { status: 500 }
-    );
+  if (!trimmed) {
+    throw new Error("Ingen text hittades i dokumentet.");
   }
+
+  const requestedModes = normalizeModes(modes);
+  const aggregated: AggregatedData = {};
+  const allWarnings: string[] = [];
+
+  for (const mode of requestedModes) {
+    const taskType = MODE_TO_TASK[mode];
+    let result: TextscannerTaskResult | null = null;
+    try {
+      result = await runTextscannerTask({
+        type: taskType,
+        text: trimmed,
+        language
+      });
+    } catch (taskError) {
+      console.error(`contract analysis ${mode} task failed`, taskError);
+      if (mode === "finance") {
+        if (aggregated.finance === undefined) {
+          aggregated.finance = null;
+        }
+        continue;
+      }
+      throw taskError;
+    }
+
+    mergeResult(aggregated, result, mode);
+    if (Array.isArray(result.warnings)) {
+      allWarnings.push(...result.warnings);
+    }
+  }
+
+  if (allWarnings.length) {
+    aggregated.warnings = Array.from(new Set(allWarnings));
+  }
+
+  return { aggregated, warnings: aggregated.warnings ?? [] };
+}
+
+export function aggregatedToSummary(
+  aggregated: AggregatedData
+): ContractAnalysisSummaryResult {
+  const summaryText =
+    aggregated.summary ??
+    aggregated.simpleExplanation ??
+    "Ingen sammanfattning kunde genereras.";
+
+  return {
+    summary: summaryText,
+    risks: aggregated.risks ?? [],
+    keyPoints: aggregated.unclearClauses ?? [],
+    finance: aggregated.finance ?? null,
+    title: null,
+    employer: null,
+    employerOrCounterparty: null,
+    salary: null,
+    pension: null,
+    employmentForm: null,
+    workloadPercent: null,
+    startDate: null,
+    endDate: null,
+    noticePeriodMonths: null,
+    riskLevel: null,
+    riskTags: aggregated.risks ?? [],
+    notes: aggregated.partyBalance ?? null
+  };
 }
 
 function normalizeModes(input: unknown): ContractMode[] {
@@ -294,7 +242,7 @@ function normalizeFinance(input: unknown): ContractFinanceSnapshot | null {
       ? finance.name.trim()
       : "Avtal";
 
-  const categoryValues: ContractFinanceCategory[] = [
+  const categoryValues: ContractFinanceSnapshot["category"][] = [
     "boende",
     "abonnemang",
     "lån",
@@ -303,8 +251,10 @@ function normalizeFinance(input: unknown): ContractFinanceSnapshot | null {
   ];
   const categoryInput =
     typeof finance.category === "string" ? finance.category.trim() : "";
-  const category = categoryValues.includes(categoryInput as ContractFinanceCategory)
-    ? (categoryInput as ContractFinanceCategory)
+  const category = categoryValues.includes(
+    categoryInput as ContractFinanceSnapshot["category"]
+  )
+    ? (categoryInput as ContractFinanceSnapshot["category"])
     : "övrigt";
 
   const currency: "SEK" = "SEK";
@@ -322,11 +272,17 @@ function normalizeFinance(input: unknown): ContractFinanceSnapshot | null {
           .filter(Boolean)
       : [];
 
-  const indexationValues: ContractFinanceIndexation[] = ["none", "cpi", "other"];
+  const indexationValues: ContractFinanceSnapshot["indexation"][] = [
+    "none",
+    "cpi",
+    "other"
+  ];
   const indexationInput =
     typeof finance.indexation === "string" ? finance.indexation.trim() : "";
-  const indexation = indexationValues.includes(indexationInput as ContractFinanceIndexation)
-    ? (indexationInput as ContractFinanceIndexation)
+  const indexation = indexationValues.includes(
+    indexationInput as ContractFinanceSnapshot["indexation"]
+  )
+    ? (indexationInput as ContractFinanceSnapshot["indexation"])
     : "none";
 
   return {
