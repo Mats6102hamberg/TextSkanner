@@ -294,13 +294,33 @@ API:t svarar med ett JSON-objekt som innehåller `overallRisk`, `summaries`, `se
 - TypeScript
 - Enkel service-lager (`apiClient.ts`, `ocrApi.ts`)
 
+## Stora nya funktioner
+
+### Dagbok & Minnesbok
+- **Dagbok:** Spara i PostgreSQL-databas med metadata (känsla, taggar, datum)
+- **Minnesbok:** Skapa AI-genererade kapitel från flera dagboksinlägg
+- **Släktmagin:** Extrahera entiteter (personer, platser, datum, händelser, relationer) med AI
+- **Släktmagin:** Tidslinje-vy (MVP + polish) med sök och modal för att visualisera familjehistoria
+
+### Nya API-endpoints
+- `POST/GET /api/diary/save` - Spara och hämta dagboksinlägg
+- `POST/GET /api/memorybook/chapters` - Skapa och hämta minnesbok-kapitel
+- `POST /api/family/extract-entities` - Extrahera släktdata från dagboksinlägg
+- `POST/GET /api/family/drafts` - Spara och hämta släktmagin-utkast
+
+### Nya UI-sidor
+- `/dagbok/historik` - Lista dagboksinlägg med filter och sök
+- `/minnesbok/kapitel` - Visa alla minnesbok-kapitel
+- `/slaktmagin/utkast` - Lista alla släktmagin-analyser
+- `/slaktmagin/tidslinje` - Visualisera familjehistoria i tidsordning
+
 ## Nästa steg / TODO
 
+- [ ] Släktträd-visualisering (interaktivt träd från relationer)
 - [ ] Koppla riktig OCR-motor (t.ex. AI-tjänst eller Tesseract)
 - [ ] Stöd för filuppladdning (inte bara bild-URL)
-- [ ] Förbättrat UI (layout, responsiv design, styling)
-- [ ] Spara OCR-resultat lokalt eller i databas (om juridik tillåter)
 - [ ] Exportera dagbokstext till PDF/Word
+- [ ] Export av släktdata till GEDCOM-format
 
 ## Licens
 
