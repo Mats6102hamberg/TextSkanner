@@ -32,6 +32,9 @@ export default function SlaktmaginTidslinjePagePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<TimelineItem | null>(null);
+  const [showSourceIds, setShowSourceIds] = useState(false);
+  const [expandedDescriptions, setExpandedDescriptions] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState("");
 
   useEffect(() => {
     loadDrafts();
@@ -51,6 +54,25 @@ export default function SlaktmaginTidslinjePagePage() {
 
     setDrafts(response.drafts || []);
     setLoading(false);
+  }
+
+  function toggleDescription(id: string) {
+    setExpandedDescriptions(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(id)) {
+        newSet.delete(id);
+      } else {
+        newSet.add(id);
+      }
+      return newSet;
+    });
+  }
+
+  function truncateText(text: string, maxLength: number = 100): { text: string; isTruncated: boolean } {
+    if (text.length <= maxLength) {
+      return { text, isTruncated: false };
+    }
+    return { text: text.substring(0, maxLength) + "...", isTruncated: true };
   }
 
   // Transformera drafts till timeline items
@@ -116,9 +138,34 @@ export default function SlaktmaginTidslinjePagePage() {
     });
   }, [drafts]);
 
+  // Filtrera timeline items baserat på sök
+  const filteredTimelineItems = useMemo(() => {
+    if (!searchQuery.trim()) return timelineItems;
+
+    const query = searchQuery.toLowerCase();
+    return timelineItems.filter(item => {
+      // Sök i titel
+      if (item.title.toLowerCase().includes(query)) return true;
+      
+      // Sök i plats
+      if (item.place?.toLowerCase().includes(query)) return true;
+      
+      // Sök i personer
+      if (item.persons.some(p => p.toLowerCase().includes(query))) return true;
+      
+      // Sök i event descriptions
+      if (item.entities.events?.some(e => 
+        e.title.toLowerCase().includes(query) || 
+        e.description.toLowerCase().includes(query)
+      )) return true;
+      
+      return false;
+    });
+  }, [timelineItems, searchQuery]);
+
   // Statistik
   const stats = useMemo(() => {
-    const totalEvents = timelineItems.length;
+    const totalEvents = filteredTimelineItems.length;
     const allPersons = new Set<string>();
     
     drafts.forEach(draft => {
@@ -130,7 +177,7 @@ export default function SlaktmaginTidslinjePagePage() {
       totalEvents,
       totalPersons: allPersons.size
     };
-  }, [drafts, timelineItems]);
+  }, [drafts, filteredTimelineItems]);
 
   return (
     <PageShell
@@ -155,12 +202,28 @@ export default function SlaktmaginTidslinjePagePage() {
                     👥 Personer ({selectedItem.entities.persons.length})
                   </h4>
                   <div className="space-y-2">
-                    {selectedItem.entities.persons.map((person, idx) => (
-                      <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <p className="font-medium text-slate-900">{person.name}</p>
-                        <p className="text-sm text-slate-600">{person.description}</p>
-                      </div>
-                    ))}
+                    {selectedItem.entities.persons.map((person, idx) => {
+                      const descId = `person-${idx}`;
+                      const isExpanded = expandedDescriptions.has(descId);
+                      const { text, isTruncated } = truncateText(person.description);
+                      
+                      return (
+                        <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <p className="font-medium text-slate-900">{person.name}</p>
+                          <p className="text-sm text-slate-600">
+                            {isExpanded ? person.description : text}
+                          </p>
+                          {isTruncated && (
+                            <button
+                              onClick={() => toggleDescription(descId)}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 mt-1"
+                            >
+                              {isExpanded ? "Visa mindre" : "Visa mer"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -172,12 +235,28 @@ export default function SlaktmaginTidslinjePagePage() {
                     📍 Platser ({selectedItem.entities.places.length})
                   </h4>
                   <div className="space-y-2">
-                    {selectedItem.entities.places.map((place, idx) => (
-                      <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <p className="font-medium text-slate-900">{place.name}</p>
-                        <p className="text-sm text-slate-600">{place.description}</p>
-                      </div>
-                    ))}
+                    {selectedItem.entities.places.map((place, idx) => {
+                      const descId = `place-${idx}`;
+                      const isExpanded = expandedDescriptions.has(descId);
+                      const { text, isTruncated } = truncateText(place.description);
+                      
+                      return (
+                        <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <p className="font-medium text-slate-900">{place.name}</p>
+                          <p className="text-sm text-slate-600">
+                            {isExpanded ? place.description : text}
+                          </p>
+                          {isTruncated && (
+                            <button
+                              onClick={() => toggleDescription(descId)}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 mt-1"
+                            >
+                              {isExpanded ? "Visa mindre" : "Visa mer"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -189,12 +268,28 @@ export default function SlaktmaginTidslinjePagePage() {
                     🎯 Händelser ({selectedItem.entities.events.length})
                   </h4>
                   <div className="space-y-2">
-                    {selectedItem.entities.events.map((event, idx) => (
-                      <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                        <p className="font-medium text-slate-900">{event.title}</p>
-                        <p className="text-sm text-slate-600">{event.description}</p>
-                      </div>
-                    ))}
+                    {selectedItem.entities.events.map((event, idx) => {
+                      const descId = `event-${idx}`;
+                      const isExpanded = expandedDescriptions.has(descId);
+                      const { text, isTruncated } = truncateText(event.description);
+                      
+                      return (
+                        <div key={idx} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                          <p className="font-medium text-slate-900">{event.title}</p>
+                          <p className="text-sm text-slate-600">
+                            {isExpanded ? event.description : text}
+                          </p>
+                          {isTruncated && (
+                            <button
+                              onClick={() => toggleDescription(descId)}
+                              className="text-xs text-indigo-600 hover:text-indigo-800 mt-1"
+                            >
+                              {isExpanded ? "Visa mindre" : "Visa mer"}
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -217,13 +312,32 @@ export default function SlaktmaginTidslinjePagePage() {
               )}
 
               <div className="pt-4 border-t">
-                <p className="text-xs text-slate-500">
-                  Baserat på {selectedItem.sourceEntryIds.length} dagboksinlägg
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-700">
+                    Källor: {selectedItem.sourceEntryIds.length} dagboksinlägg
+                  </p>
+                  <button
+                    onClick={() => setShowSourceIds(!showSourceIds)}
+                    className="text-xs text-indigo-600 hover:text-indigo-800"
+                  >
+                    {showSourceIds ? "Dölj IDs" : "Visa IDs"}
+                  </button>
+                </div>
+                {showSourceIds && (
+                  <div className="mt-2 p-2 bg-slate-50 rounded border border-slate-200">
+                    <p className="text-xs text-slate-600 font-mono break-all">
+                      {selectedItem.sourceEntryIds.join(", ")}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 pt-4">
-                <Button onClick={() => setSelectedItem(null)} variant="primary">
+                <Button onClick={() => {
+                  setSelectedItem(null);
+                  setShowSourceIds(false);
+                  setExpandedDescriptions(new Set());
+                }} variant="primary">
                   Stäng
                 </Button>
               </div>
@@ -268,6 +382,38 @@ export default function SlaktmaginTidslinjePagePage() {
                 ← Tillbaka till Utkast
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Sök */}
+      <section className="mt-8">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="flex-1">
+                <input
+                  type="text"
+                  placeholder="Sök efter person, plats eller händelse..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery("")}
+                  className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900"
+                >
+                  Rensa
+                </button>
+              )}
+            </div>
+            {searchQuery && (
+              <p className="mt-2 text-xs text-slate-500">
+                Visar {filteredTimelineItems.length} av {timelineItems.length} händelser
+              </p>
+            )}
           </CardContent>
         </Card>
       </section>
@@ -333,19 +479,33 @@ export default function SlaktmaginTidslinjePagePage() {
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           {/* Datum header */}
-                          <p className="text-xs font-medium text-slate-500 mb-2">
-                            {item.date ? (
-                              new Date(item.date).toLocaleDateString('sv-SE', {
-                                year: 'numeric',
-                                month: 'long',
-                                day: 'numeric'
-                              })
-                            ) : item.dateText ? (
-                              `"${item.dateText}"`
-                            ) : (
-                              "Okänt datum"
-                            )}
-                          </p>
+                          {item.date ? (
+                            <div className="mb-2">
+                              <p className="text-sm font-medium text-slate-700">
+                                {new Date(item.date).toLocaleDateString('sv-SE', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric'
+                                })}
+                              </p>
+                              <p className="text-xs text-slate-400">
+                                {item.date}
+                              </p>
+                            </div>
+                          ) : item.dateText ? (
+                            <div className="mb-2">
+                              <p className="text-sm font-medium text-slate-700 italic">
+                                "{item.dateText}"
+                              </p>
+                              <p className="text-xs text-orange-600">
+                                Osäkert datum
+                              </p>
+                            </div>
+                          ) : (
+                            <p className="text-xs font-medium text-slate-500 mb-2">
+                              Okänt datum
+                            </p>
+                          )}
 
                           {/* Titel */}
                           <h3 className="text-lg font-semibold text-slate-900 mb-2">
