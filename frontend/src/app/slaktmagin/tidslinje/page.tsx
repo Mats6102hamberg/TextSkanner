@@ -448,6 +448,18 @@ export default function SlaktmaginTidslinjePagePage() {
               </Button>
             </CardContent>
           </Card>
+        ) : filteredTimelineItems.length === 0 ? (
+          <Card>
+            <CardContent className="py-12 text-center">
+              <p className="text-lg font-medium text-slate-900">Inga resultat</p>
+              <p className="mt-2 text-sm text-slate-600">
+                Prova att söka efter något annat.
+              </p>
+              <Button onClick={() => setSearchQuery("")} size="sm" className="mt-4">
+                Rensa sökning
+              </Button>
+            </CardContent>
+          </Card>
         ) : (
           <div className="relative">
             {/* Vertikal linje */}
@@ -455,7 +467,7 @@ export default function SlaktmaginTidslinjePagePage() {
 
             {/* Timeline items */}
             <div className="space-y-8">
-              {timelineItems.map((item, idx) => (
+              {filteredTimelineItems.map((item, idx) => (
                 <div key={`${item.draftId}-${idx}`} className="relative pl-20">
                   {/* Datum-cirkel */}
                   <div className="absolute left-0 top-0 flex items-center">
