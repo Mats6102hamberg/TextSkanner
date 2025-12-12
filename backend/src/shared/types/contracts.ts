@@ -54,3 +54,28 @@ export interface ContractAnalysisResult {
   detectedAmounts?: string[];
   finance?: ContractFinanceSnapshot | null;
 }
+
+export type ContractType = "employment" | "rental" | "loan" | "other";
+
+export interface ContractSummary {
+  id: string;
+  userId: string;
+  sourceApp: "textscanner";
+  sourceDocumentId: string;
+  type: ContractType;
+  title: string;
+  employerOrCounterparty: string | null;
+  monthlyIncome: number | null;
+  variableIncome: number | null;
+  pensionPercent: number | null;
+  employmentForm: "permanent" | "temporary" | "probationary" | null;
+  workloadPercent: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  noticePeriodMonths: number | null;
+  riskLevel: "low" | "medium" | "high" | null;
+  riskTags: string[];
+  notes: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

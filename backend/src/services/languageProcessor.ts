@@ -31,7 +31,7 @@ export async function processLanguageRequest(payload: unknown): Promise<string> 
   const prompt = MODE_PROMPTS[mode as ModeKey];
 
   const completion = await openai.chat.completions.create({
-    model: process.env.CONTRACT_ANALYZER_MODEL ?? "gpt-4.1-mini",
+    model: process.env.CONTRACT_ANALYZER_MODEL ?? "gpt-4o-mini",
     temperature: 0.2,
     messages: [
       {

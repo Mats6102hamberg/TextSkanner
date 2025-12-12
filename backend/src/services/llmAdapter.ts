@@ -51,7 +51,7 @@ export async function callLLMForContractAnalysis(
     throw new Error("rawText saknas för kontraktsanalys");
   }
 
-  const model = process.env.CONTRACT_ANALYZER_MODEL ?? "gpt-4.1-mini";
+  const model = process.env.CONTRACT_ANALYZER_MODEL ?? "gpt-4o-mini";
 
   const systemPrompt = `Du är en expert på kommersiella avtal, villkor, risker och svensk affärsjuridik på grundläggande nivå.
 Du får INTE ge juridisk rådgivning utan ska endast beskriva risker och strukturera information.
