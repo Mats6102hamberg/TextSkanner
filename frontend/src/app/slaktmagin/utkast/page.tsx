@@ -125,12 +125,22 @@ export default function SlaktmaginUtkastPage() {
       )}
 
       {/* Statistik */}
-      <section className="grid gap-4 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
               <p className="text-4xl font-bold text-slate-900">{drafts.length}</p>
               <p className="text-sm text-slate-600">Totalt antal utkast</p>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center">
+              <Button onClick={() => router.push("/slaktmagin/tidslinje")} size="md" variant="primary">
+                🕐 Visa tidslinje
+              </Button>
             </div>
           </CardContent>
         </Card>
