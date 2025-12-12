@@ -112,8 +112,40 @@ export type OcrScanResponse = {
   rawText?: string;
   maskedText?: string;
   summary?: string | null;
+  entryDate?: string;
+  detectedMood?: string;
+  moodScore?: number;
   warnings?: string[];
   error?: string;
+};
+
+export type DiaryEntry = {
+  id: string;
+  text?: string | null;
+  originalText?: string | null;
+  clarifiedText?: string | null;
+  storyText?: string | null;
+  imageUrl?: string | null;
+  entryDate?: Date | null;
+  detectedMood?: string | null;
+  moodScore?: number | null;
+  tags?: string[];
+  summary?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+export type SaveDiaryRequest = {
+  text?: string;
+  originalText?: string;
+  clarifiedText?: string;
+  storyText?: string;
+  imageUrl?: string;
+  entryDate?: string;
+  detectedMood?: string;
+  moodScore?: number;
+  tags?: string[];
+  summary?: string;
 };
 
 export type MaskingResultResponse = {
@@ -277,12 +309,6 @@ export async function scanDiaryPage(file: File): Promise<OcrScanResponse> {
   return data;
 }
 
-export type MemoryBookChapter = {
-  title: string;
-  summary: string;
-  keyMoments: string[];
-};
-
 export type MemoryBookTimelineItem = {
   label: string;
   description: string;
@@ -316,7 +342,8 @@ export type MemoryBookResponse = {
 };
 
 export async function generateMemoryBook(
-  files: File[]
+  files: File[],
+  language: string = "sv"
 ): Promise<MemoryBookResponse> {
   if (!files.length) {
     return { ok: false, error: "Ladda upp minst en dagboksfil." };
@@ -326,6 +353,7 @@ export async function generateMemoryBook(
   for (const file of files) {
     formData.append("files", file);
   }
+  formData.append("language", language);
 
   let res: Response;
   try {
@@ -447,4 +475,219 @@ export async function generateFamilyFilm(
   }
 
   return { ...data, ok: true };
+}
+
+export async function saveDiaryEntry(data: SaveDiaryRequest): Promise<{ ok: boolean; id?: string; error?: string }> {
+  try {
+    const res = await fetch("/api/diary/save", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(data)
+    });
+
+    const result = await res.json();
+    
+    if (!res.ok) {
+      return { ok: false, error: result.error || "Kunde inte spara dagboksinlägg." };
+    }
+
+    return { ok: true, id: result.id };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: "Kunde inte nå servern." };
+  }
+}
+
+export async function getDiaryEntries(limit: number = 20, mood?: string): Promise<{ ok: boolean; entries?: DiaryEntry[]; error?: string }> {
+  try {
+    const params = new URLSearchParams({ limit: limit.toString() });
+    if (mood) params.append("mood", mood);
+
+    const res = await fetch(`/api/diary/save?${params.toString()}`);
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { ok: false, error: result.error || "Kunde inte hämta dagboksinlägg." };
+    }
+
+    return { ok: true, entries: result.entries };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: "Kunde inte nå servern." };
+  }
+}
+
+export type MemoryBookChapter = {
+  id: string;
+  title: string;
+  content: string;
+  summary: string | null;
+  tags: string[];
+  sourceEntryIds: string[];
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+export async function createMemoryBookChapter(entryIds: string[]): Promise<{
+  ok: boolean;
+  chapter?: MemoryBookChapter;
+  error?: string;
+}> {
+  try {
+    const res = await fetch("/api/memorybook/chapters", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryIds })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { ok: false, error: result.error || "Kunde inte skapa kapitel." };
+    }
+
+    return { ok: true, chapter: result.chapter };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: "Kunde inte nå servern." };
+  }
+}
+
+export async function getMemoryBookChapters(): Promise<{
+  ok: boolean;
+  chapters?: MemoryBookChapter[];
+  error?: string;
+}> {
+  try {
+    const res = await fetch("/api/memorybook/chapters");
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { ok: false, error: result.error || "Kunde inte hämta kapitel." };
+    }
+
+    return { ok: true, chapters: result.chapters };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: "Kunde inte nå servern." };
+  }
+}
+
+export type FamilyPerson = {
+  name: string;
+  description: string;
+  confidence: number;
+};
+
+export type FamilyPlace = {
+  name: string;
+  description: string;
+  confidence: number;
+};
+
+export type FamilyDate = {
+  date: string | null;
+  dateText?: string;
+  description: string;
+  confidence: number;
+};
+
+export type FamilyEvent = {
+  title: string;
+  description: string;
+  confidence: number;
+};
+
+export type FamilyRelationship = {
+  person1: string;
+  person2: string;
+  type: string;
+  confidence: number;
+};
+
+export type ExtractedEntities = {
+  persons: FamilyPerson[];
+  places: FamilyPlace[];
+  dates: FamilyDate[];
+  events: FamilyEvent[];
+  relationships: FamilyRelationship[];
+};
+
+export async function extractFamilyEntities(entryIds: string[]): Promise<{
+  ok: boolean;
+  entities?: ExtractedEntities;
+  error?: string;
+}> {
+  try {
+    const res = await fetch("/api/family/extract-entities", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryIds })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { ok: false, error: result.error || "Kunde inte extrahera entiteter." };
+    }
+
+    return { ok: true, entities: result.entities };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: "Kunde inte nå servern." };
+  }
+}
+
+export type FamilyEntityDraft = {
+  id: string;
+  sourceEntryIds: string[];
+  entities: ExtractedEntities;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+};
+
+export async function saveFamilyDraft(entryIds: string[], entities: ExtractedEntities): Promise<{
+  ok: boolean;
+  id?: string;
+  draft?: FamilyEntityDraft;
+  error?: string;
+}> {
+  try {
+    const res = await fetch("/api/family/drafts", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ entryIds, entities })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { ok: false, error: result.error || "Kunde inte spara utkast." };
+    }
+
+    return { ok: true, id: result.id, draft: result.draft };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: "Kunde inte nå servern." };
+  }
+}
+
+export async function getFamilyDrafts(): Promise<{
+  ok: boolean;
+  drafts?: FamilyEntityDraft[];
+  error?: string;
+}> {
+  try {
+    const res = await fetch("/api/family/drafts");
+    const result = await res.json();
+
+    if (!res.ok) {
+      return { ok: false, error: result.error || "Kunde inte hämta utkast." };
+    }
+
+    return { ok: true, drafts: result.drafts };
+  } catch (err) {
+    console.error(err);
+    return { ok: false, error: "Kunde inte nå servern." };
+  }
 }

@@ -14,6 +14,8 @@ export default function MinnesbokPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<MemoryBookResponse | null>(null);
+  const [language, setLanguage] = useState<string>("sv");
+  const [progress, setProgress] = useState<string>("");
 
   const totalSizeLabel = useMemo(() => {
     if (!files.length) return null;
@@ -39,16 +41,30 @@ export default function MinnesbokPage() {
     setLoading(true);
     setError(null);
     setResult(null);
+    setProgress("Läser in filer...");
 
-    const response = await generateMemoryBook(files);
-    setLoading(false);
+    try {
+      // Simulera progress för bättre UX
+      setTimeout(() => setProgress("Kör OCR på dagbokssidor..."), 1000);
+      setTimeout(() => setProgress("Maskerar känslig information..."), 3000);
+      setTimeout(() => setProgress("Analyserar innehåll med AI..."), 5000);
+      setTimeout(() => setProgress("Skapar kapitel och tidslinje..."), 8000);
 
-    if (!response.ok) {
-      setError(response.error ?? "Minnesboken kunde inte genereras.");
-      return;
+      const response = await generateMemoryBook(files, language);
+      setLoading(false);
+      setProgress("");
+
+      if (!response.ok) {
+        setError(response.error ?? "Minnesboken kunde inte genereras.");
+        return;
+      }
+
+      setResult(response);
+    } catch (err) {
+      setLoading(false);
+      setProgress("");
+      setError("Ett oväntat fel uppstod. Försök igen.");
     }
-
-    setResult(response);
   }
 
   const analysis = result?.analysis;
@@ -97,6 +113,26 @@ export default function MinnesbokPage() {
           </p>
         </div>
 
+        <div className="space-y-2 text-sm">
+          <label className="font-medium text-gray-900">
+            Språk för analysen
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="mt-2 block w-full rounded-2xl border border-slate-200 bg-white px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-slate-900"
+            >
+              <option value="sv">Svenska</option>
+              <option value="en">English</option>
+              <option value="no">Norsk</option>
+              <option value="da">Dansk</option>
+              <option value="auto">Auto-detektera språk</option>
+            </select>
+          </label>
+          <p className="text-xs text-gray-500">
+            Välj vilket språk analysen ska skrivas på. Auto-detektering identifierar dagbokens språk.
+          </p>
+        </div>
+
         <button
           type="submit"
           disabled={loading}
@@ -104,6 +140,15 @@ export default function MinnesbokPage() {
         >
           {loading ? "Skapar minnesbok…" : "Skapa minnesbok"}
         </button>
+
+        {loading && progress && (
+          <div className="rounded-2xl border border-blue-200 bg-blue-50 px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+              <p className="text-sm text-blue-900">{progress}</p>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">

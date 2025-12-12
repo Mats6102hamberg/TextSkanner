@@ -45,7 +45,10 @@ interface MemoryBookResponse {
 }
 
 const MEMORY_BOOK_MODEL =
-  process.env.OPENAI_MEMORY_BOOK_MODEL ?? "gpt-4.1-mini";
+  process.env.OPENAI_MEMORY_BOOK_MODEL ?? "gpt-4o-mini";
+
+const MAX_TOKENS_PER_REQUEST = 120000; // ~120k tokens för gpt-4o-mini
+const CHARS_PER_TOKEN = 4; // Ungefärlig konvertering
 
 export async function POST(req: NextRequest) {
   try {
@@ -60,6 +63,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const fileEntries = formData.getAll("files");
     const files = fileEntries.filter((entry): entry is File => entry instanceof File);
+    const language = (formData.get("language") as string) || "sv";
 
     if (!files.length) {
       return NextResponse.json(
@@ -111,7 +115,7 @@ export async function POST(req: NextRequest) {
       warnings.push(maskingWarning);
     }
 
-    const analysis = await analyzeMemoryBookText(maskedText);
+    const analysis = await analyzeMemoryBookText(maskedText, language);
     if (analysis.warning) {
       warnings.push(analysis.warning);
     }
@@ -167,22 +171,54 @@ async function safeMask(text: string) {
   };
 }
 
-async function analyzeMemoryBookText(text: string): Promise<MemoryBookAnalysis> {
-  const prompt = `Du är Minnesboken. Du omvandlar dagboksanteckningar till en minnesbok.\nReturnera ENDAST JSON som matchar MemoryBookAnalysis-schemat. Max 6 kapitel.`;
+async function analyzeMemoryBookText(
+  text: string,
+  language: string = "sv"
+): Promise<MemoryBookAnalysis> {
+  // Kontrollera textlängd och trunkera om nödvändigt
+  const maxChars = MAX_TOKENS_PER_REQUEST * CHARS_PER_TOKEN;
+  const truncatedText = text.length > maxChars ? text.slice(0, maxChars) : text;
+  
+  if (text.length > maxChars) {
+    console.warn(`Text trunkerad från ${text.length} till ${maxChars} tecken`);
+  }
+
+  const languageInstruction = getLanguageInstruction(language);
+  
+  const prompt = `Du är Minnesboken - en AI som hjälper människor att omvandla dagboksanteckningar till strukturerade minnesböcker.
+
+UPPGIFT:
+Analysera dagbokstexten och skapa en minnesbok med:
+- En passande boktitel och undertitel
+- Max 6 kapitel med titlar, sammanfattningar och nyckelögonblick
+- En tidslinje med viktiga datum och händelser
+- Personer som nämns med beskrivningar
+- Återkommande teman
+- En ton-sammanfattning som beskriver bokens känsla
+
+REGLER:
+- Bevara autenticitet - hitta inte på händelser
+- Var respektfull mot personliga minnen
+- Identifiera viktiga ögonblick och känslor
+- Gruppera liknande händelser i kapitel
+- Håll språket varmt och personligt
+- ${languageInstruction}
+
+Returnera ENDAST giltig JSON enligt MemoryBookAnalysis-schemat.`;
 
   const completion = await openai.chat.completions.create({
     model: MEMORY_BOOK_MODEL,
-    temperature: 0.2,
+    temperature: 0.3,
     response_format: { type: "json_object" },
     messages: [
       {
         role: "system",
         content:
-          "Du hjälper Textscanner-användare att skapa minnesböcker. Svara alltid med giltig JSON som matchar MemoryBookAnalysis."
+          "Du hjälper Textscanner-användare att skapa minnesböcker. Svara alltid med giltig JSON som matchar MemoryBookAnalysis. Var empatisk och respektfull mot personliga minnen."
       },
       {
         role: "user",
-        content: `${prompt}\n\nDagboksmaterial:\n${text}`
+        content: `${prompt}\n\nDagboksmaterial:\n${truncatedText}`
       }
     ]
   });
@@ -288,6 +324,26 @@ function normalizeString(value: unknown, fallback: string) {
     return value.trim();
   }
   return fallback;
+}
+
+function getLanguageInstruction(language: string): string {
+  switch (language.toLowerCase()) {
+    case "sv":
+    case "svenska":
+      return "Skriv hela analysen på svenska";
+    case "en":
+    case "english":
+    case "engelska":
+      return "Write the entire analysis in English";
+    case "no":
+    case "norska":
+      return "Skriv hele analysen på norsk";
+    case "da":
+    case "danska":
+      return "Skriv hele analysen på dansk";
+    default:
+      return "Identifiera språket i dagboken och skriv analysen på samma språk";
+  }
 }
 
 function fallbackAnalysis(): MemoryBookAnalysis {

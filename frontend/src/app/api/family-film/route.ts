@@ -5,7 +5,7 @@ import { openai } from "../ocr/route-helpers";
 export const runtime = "nodejs";
 
 const FAMILY_FILM_MODEL =
-  process.env.OPENAI_FAMILY_FILM_MODEL ?? "gpt-4.1-mini";
+  process.env.OPENAI_FAMILY_FILM_MODEL ?? "gpt-4o-mini";
 
 const LENGTH_MINUTES: Record<string, number> = {
   short: 3,

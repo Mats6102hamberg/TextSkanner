@@ -8,12 +8,19 @@ generator client {
 }
 
 model DiaryEntry {
-  id        String   @id @default(cuid())
-  text      String?
+  id             String   @id @default(cuid())
+  text           String?
   originalText   String?
-  translatedText String?
-  imageUrl  String?
-  createdAt DateTime @default(now())
+  clarifiedText  String?
+  storyText      String?
+  imageUrl       String?
+  entryDate      DateTime? // Datum från dagboken (AI-detekterat)
+  detectedMood   String?   // Känsla: "glad", "ledsen", "stressad", etc.
+  moodScore      Float?    // -1.0 (negativ) till 1.0 (positiv)
+  tags           String[]  // Teman: ["arbete", "familj", "hälsa"]
+  summary        String?   // AI-genererad sammanfattning
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 }
 
 model ContractDocument {
@@ -32,4 +39,23 @@ model ContractAnalysis {
   documentId String
   overallRisk String
   resultJson Json
+}
+
+model MemoryBookChapter {
+  id              String   @id @default(cuid())
+  title           String
+  content         String   // Fullständig kapiteltext
+  summary         String?  // Kort sammanfattning
+  tags            String[] // Teman från dagboksinlägg
+  sourceEntryIds  String[] // IDs till DiaryEntry som ingår
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model FamilyEntityDraft {
+  id              String   @id @default(cuid())
+  sourceEntryIds  String[] // IDs till DiaryEntry som analyserats
+  entities        Json     // ExtractedEntities (persons, places, dates, events, relationships)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }

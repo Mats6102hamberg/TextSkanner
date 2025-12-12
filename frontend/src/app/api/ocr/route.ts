@@ -66,11 +66,23 @@ export async function POST(req: NextRequest) {
       warnings.push("Sammanfattning misslyckades – visar endast text.");
     }
 
+    // Detektera datum och känslor
+    let metadata: { entryDate?: string; mood?: string; moodScore?: number } = {};
+    try {
+      metadata = await detectDateAndMood(maskedText ?? text, language);
+    } catch (metadataError) {
+      console.error("Metadata-detektion misslyckades:", metadataError);
+      // Inte kritiskt, fortsätt ändå
+    }
+
     return NextResponse.json({
       ok: true,
       rawText: rawPreview,
       maskedText,
       summary,
+      entryDate: metadata.entryDate,
+      detectedMood: metadata.mood,
+      moodScore: metadata.moodScore,
       warnings: warnings.length ? warnings : undefined,
       debug: {
         name: file.name,
@@ -89,22 +101,33 @@ export async function POST(req: NextRequest) {
 
 async function runOcrOnBuffer(buffer: Buffer, mime: string, language: string) {
   const base64 = buffer.toString("base64");
+  
   const sourceLanguageInstruction =
     language === "auto"
-      ? "Försök först avgöra vilket språk texten är på. Läs sedan av all text så noggrant som möjligt."
+      ? "Identifiera först vilket språk texten är skriven på. Läs sedan av all text exakt som den står."
       : `Texten är på språket "${language}". Läs av den exakt som den står.`;
 
-  const prompt = `
+  const prompt = `Du är en expert på OCR (Optical Character Recognition) och textigenkänning från handskrivna och tryckta dokument.
+
 ${sourceLanguageInstruction}
 
-Regler:
-- Returnera bara råtexten från dokumentet/bilden.
-- Ta inte med egna kommentarer eller rubriker.
-- Översätt inte texten.
-`;
+UPPGIFT:
+Läs av all synlig text från bilden/dokumentet så noggrant som möjligt.
+
+REGLER:
+- Bevara originalformatering (radbrytningar, stycken)
+- Behåll stavning och grammatik exakt som i originalet (även om det finns fel)
+- Inkludera datum, rubriker och all annan text
+- Om något är svårläst, gör ditt bästa för att tolka det
+- Returnera ENDAST råtexten - inga kommentarer, förklaringar eller tillägg
+- Översätt INTE texten till något annat språk
+- Om texten är handskriven, var extra noggrann med att tolka bokstäver korrekt
+
+Returnera den extraherade texten direkt utan extra formatering.`;
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-4.1-mini",
+    model: "gpt-4o-mini",
+    temperature: 0.1, // Låg temperature för mer exakt OCR
     messages: [
       {
         role: "user",
@@ -165,4 +188,62 @@ async function summarizeDiary(text: string, language: string) {
   });
 
   return completion.choices[0]?.message?.content?.trim() ?? null;
+}
+
+async function detectDateAndMood(text: string, language: string): Promise<{
+  entryDate?: string;
+  mood?: string;
+  moodScore?: number;
+}> {
+  if (!text || !text.trim()) {
+    return {};
+  }
+
+  const prompt = `Analysera följande dagbokstext och extrahera:
+1. Datum som nämns i texten (format: YYYY-MM-DD, eller null om inget datum finns)
+2. Övergripande känsla/stämning (välj EN av: glad, ledsen, stressad, tacksam, arg, rädd, neutral, hoppfull, ensam, energisk)
+3. Känslostyrka från -1.0 (mycket negativ) till 1.0 (mycket positiv)
+
+Svara ENDAST med JSON i detta format:
+{
+  "entryDate": "YYYY-MM-DD eller null",
+  "mood": "känsla",
+  "moodScore": 0.5
+}
+
+Dagbokstext:
+${text.slice(0, 2000)}`;
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    temperature: 0.2,
+    response_format: { type: "json_object" },
+    messages: [
+      {
+        role: "system",
+        content: "Du är en expert på att analysera dagbokstexter och identifiera datum och känslor. Svara alltid med giltig JSON."
+      },
+      {
+        role: "user",
+        content: prompt
+      }
+    ]
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) {
+    return {};
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      entryDate: parsed.entryDate !== "null" && parsed.entryDate ? parsed.entryDate : undefined,
+      mood: parsed.mood || undefined,
+      moodScore: typeof parsed.moodScore === "number" ? parsed.moodScore : undefined
+    };
+  } catch (err) {
+    console.error("Kunde inte tolka datum/känslor:", err);
+    return {};
+  }
 }
