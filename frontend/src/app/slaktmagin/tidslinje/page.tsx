@@ -346,6 +346,30 @@ export default function SlaktmaginTidslinjePagePage() {
         </div>
       )}
 
+      {/* Släktträd CTA */}
+      <section className="mb-6">
+        <Card className="border-2 border-dashed border-indigo-200 bg-indigo-50/50">
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-indigo-100">
+                  <span className="text-2xl">🌳</span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-slate-900">Skapa Släktträd</h3>
+                  <p className="text-sm text-slate-600">
+                    Visualisera relationer i ett interaktivt släktträd
+                  </p>
+                </div>
+              </div>
+              <Button disabled size="md" className="opacity-60 cursor-not-allowed">
+                🌳 Snart tillgängligt
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
       {/* Statistik */}
       <section className="grid gap-4 md:grid-cols-4">
         <Card>
