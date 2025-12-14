@@ -1,119 +1,90 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
 import OpenAI from "openai";
-
-const prisma = new PrismaClient();
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+import { prisma } from "@/lib/prisma";
 
 export const runtime = "nodejs";
 
-type CreateChapterRequest = {
-  entryIds: string[];
-};
-
-type CreateChapterResponse = {
-  ok: boolean;
-  error?: string;
-  chapterId?: string;
-  preview?: {
-    title: string;
-    summary: string;
-    keyMoments: string[];
-    tags: string[];
-  };
-};
-
-export async function POST(req: NextRequest): Promise<NextResponse<CreateChapterResponse>> {
+export async function POST(req: NextRequest) {
   try {
-    const body = (await req.json()) as CreateChapterRequest;
+    const body = await req.json();
 
-    if (!body.entryIds || body.entryIds.length === 0) {
+    const entryIds: string[] = Array.isArray(body?.entryIds) ? body.entryIds : [];
+    if (!entryIds.length) {
       return NextResponse.json(
-        { ok: false, error: "Minst ett dagboksinlägg krävs." },
+        { ok: false, error: "Inga entryIds skickades." },
         { status: 400 }
       );
     }
 
-    // Hämta dagboksinlägg från DB
+    // Hämta dagboksinlägg
     const entries = await prisma.diaryEntry.findMany({
-      where: {
-        id: { in: body.entryIds }
-      },
-      orderBy: {
-        createdAt: "asc"
-      }
+      where: { id: { in: entryIds } },
+      select: { id: true, originalText: true, text: true, storyText: true, clarifiedText: true }
     });
 
-    if (entries.length === 0) {
+    const combined = entries
+      .map((e) => {
+        const parts = [
+          e.originalText?.trim(),
+          e.clarifiedText?.trim(),
+          e.storyText?.trim(),
+          e.text?.trim()
+        ].filter(Boolean);
+        return `# ${e.id}\n${parts.join("\n\n")}`;
+      })
+      .filter(Boolean)
+      .join("\n\n---\n\n");
+
+    if (!combined.trim()) {
       return NextResponse.json(
-        { ok: false, error: "Inga dagboksinlägg hittades." },
-        { status: 404 }
+        { ok: false, error: "Inga texter hittades för dessa entryIds." },
+        { status: 400 }
       );
     }
 
-    // Sammanfoga text från alla inlägg
-    const combinedText = entries
-      .map((entry) => {
-        const text = entry.storyText || entry.clarifiedText || entry.originalText || entry.text;
-        const date = entry.entryDate ? new Date(entry.entryDate).toLocaleDateString('sv-SE') : '';
-        return date ? `${date}: ${text}` : text;
-      })
-      .join("\n\n");
+    const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-    // Samla alla tags
-    const allTags = entries.flatMap((entry) => entry.tags || []);
-    const uniqueTags = [...new Set(allTags)];
-
-    // Generera kapitel med OpenAI
-    const prompt = `Du är en författare som skapar minnesböcker från dagboksinlägg.
-
-Dagboksinlägg:
-${combinedText}
-
-Skapa ett minnesbok-kapitel baserat på dessa inlägg. Svara ENDAST med valid JSON i detta format:
-{
-  "title": "Kapitelrubrik (max 60 tecken)",
-  "chapterText": "Fullständig kapiteltext som sammanfogar inläggen till en sammanhängande berättelse (minst 200 ord)",
-  "summary": "Kort sammanfattning (max 100 ord)",
-  "keyMoments": ["Viktigt ögonblick 1", "Viktigt ögonblick 2", "Viktigt ögonblick 3"]
-}
-
-Skriv på svenska. Gör texten personlig och berättande.`;
-
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
+      temperature: 0.7,
+      response_format: { type: "json_object" },
       messages: [
         {
           role: "system",
-          content: "Du är en professionell författare som skapar minnesböcker. Svara alltid med valid JSON."
+          content:
+            "Du är en svensk redaktör. Skapa ett minnesbokskapitel baserat på dagboksanteckningar. Svara ENBART som JSON med fälten: title (string), content (string), summary (string), tags (string[])."
         },
-        {
-          role: "user",
-          content: prompt
-        }
-      ],
-      temperature: 0.7,
-      response_format: { type: "json_object" }
+        { role: "user", content: combined }
+      ]
     });
 
-    const result = JSON.parse(completion.choices[0].message.content || "{}");
+    const raw = completion.choices?.[0]?.message?.content || "{}";
+    const result = JSON.parse(raw);
 
-    if (!result.title || !result.chapterText) {
+    const title = typeof result.title === "string" ? result.title.trim() : "";
+    const content = typeof result.content === "string" ? result.content.trim() : "";
+    const summary = typeof result.summary === "string" ? result.summary.trim() : "";
+
+    const tags: string[] = Array.isArray(result.tags)
+      ? result.tags.map((t: unknown) => String(t).trim()).filter(Boolean)
+      : [];
+    const uniqueTags: string[] = Array.from(new Set(tags)).slice(0, 12);
+
+    if (!title || !content) {
       return NextResponse.json(
-        { ok: false, error: "AI kunde inte generera kapitel." },
+        { ok: false, error: "AI kunde inte generera titel och innehåll." },
         { status: 500 }
       );
     }
 
-    // Spara kapitel i DB
+    // Spara kapitel i DB - exakt enligt Prisma schema
     const chapter = await prisma.memoryBookChapter.create({
       data: {
-        title: result.title,
-        chapterText: result.chapterText,
-        summary: result.summary || null,
+        title,
+        content,
+        summary: summary || null,
         tags: uniqueTags,
-        diaryEntryIds: body.entryIds,
-        keyMoments: result.keyMoments || []
+        sourceEntryIds: entryIds
       }
     });
 
@@ -121,14 +92,15 @@ Skriv på svenska. Gör texten personlig och berättande.`;
       ok: true,
       chapterId: chapter.id,
       preview: {
-        title: result.title,
-        summary: result.summary || "",
-        keyMoments: result.keyMoments || [],
-        tags: uniqueTags
+        title,
+        content,
+        summary,
+        tags: uniqueTags,
+        sourceEntryIds: entryIds
       }
     });
   } catch (error) {
-    console.error("Fel vid skapande av minnesbok-kapitel:", error);
+    console.error("POST /api/memorybook/createChapter error:", error);
     return NextResponse.json(
       { ok: false, error: "Kunde inte skapa kapitel." },
       { status: 500 }

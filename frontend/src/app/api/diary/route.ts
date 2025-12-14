@@ -36,7 +36,6 @@ export async function POST(req: NextRequest) {
     const entry = await prisma.diaryEntry.create({
       data: {
         originalText,
-        translatedText,
         imageUrl
       }
     });

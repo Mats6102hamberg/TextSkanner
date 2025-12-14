@@ -216,13 +216,6 @@ export default function MinnesbokPage() {
                     </div>
                     <p className="mt-1 text-base font-semibold text-gray-900">{chapter.title}</p>
                     <p className="mt-2 text-sm text-gray-700 whitespace-pre-line">{chapter.summary}</p>
-                    {chapter.keyMoments?.length ? (
-                      <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-gray-600">
-                        {chapter.keyMoments.map((moment, idx) => (
-                          <li key={`moment-${index}-${idx}`}>{moment}</li>
-                        ))}
-                      </ul>
-                    ) : null}
                   </article>
                 ))}
               </div>
