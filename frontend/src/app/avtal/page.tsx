@@ -361,6 +361,10 @@ export default function AvtalPage() {
                   <li>• Klicka på Analysera för att få sammanfattning, risker och nyckelpunkter.</li>
                   <li>• Godkänn delningen om du vill skicka resultatet till Prospero.</li>
                 </ul>
+                <div className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                  <strong>⚠️ Observera:</strong> Avtalskollen ger en automatisk teknisk analys och är <strong>inte juridisk rådgivning</strong>. 
+                  Rådgör alltid med en jurist för viktiga avtalsbeslut.
+                </div>
               </div>
             </form>
 
