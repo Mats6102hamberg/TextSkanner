@@ -1,0 +1,210 @@
+/* Mobile-first responsive design utilities */
+
+/* Base mobile styles */
+@media (max-width: 640px) {
+  /* Container adjustments */
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  /* Typography scaling */
+  h1 { font-size: 1.5rem; line-height: 1.2; }
+  h2 { font-size: 1.25rem; line-height: 1.2; }
+  h3 { font-size: 1.125rem; line-height: 1.2; }
+  
+  /* Button adjustments */
+  .btn {
+    @apply px-4 py-2 text-sm;
+    min-height: 44px; /* iOS touch target */
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+    min-height: 48px;
+  }
+  
+  /* Form elements */
+  input, select, textarea {
+    @apply text-base;
+    min-height: 44px; /* iOS touch target */
+  }
+  
+  /* Card layouts */
+  .card {
+    @apply rounded-lg shadow-md;
+  }
+  
+  /* Grid adjustments */
+  .grid-responsive {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  /* Navigation */
+  .nav-mobile {
+    @apply flex flex-col space-y-2;
+  }
+  
+  /* Tables */
+  .table-mobile {
+    @apply text-sm;
+  }
+  
+  .table-mobile th,
+  .table-mobile td {
+    @apply px-2 py-1;
+  }
+  
+  /* Images */
+  .img-responsive {
+    @apply max-w-full h-auto;
+  }
+  
+  /* Hide elements on mobile */
+  .hidden-mobile {
+    @apply hidden;
+  }
+  
+  /* Show only on mobile */
+  .show-mobile {
+    @apply block;
+  }
+}
+
+/* Tablet styles */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .grid-responsive {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+  }
+  
+  .show-mobile {
+    @apply hidden;
+  }
+  
+  .hidden-mobile {
+    @apply block;
+  }
+}
+
+/* Desktop styles */
+@media (min-width: 1025px) {
+  .grid-responsive {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+}
+
+/* Touch-friendly interactions */
+@media (hover: none) and (pointer: coarse) {
+  /* Remove hover effects on touch devices */
+  .hover\:scale-105:hover {
+    transform: none;
+  }
+  
+  .hover\:bg-blue-600:hover {
+    background-color: inherit;
+  }
+  
+  /* Increase tap targets */
+  button, a, input, select, textarea {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  /* Add visual feedback for touch */
+  button:active,
+  a:active {
+    @apply opacity-75;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  /* Prevent zoom on input focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+  
+  /* Fix viewport height */
+  .vh-full {
+    height: 100vh;
+    height: -webkit-fill-available;
+  }
+}
+
+/* Android Chrome specific fixes */
+@media screen and (-webkit-min-device-pixel-ratio: 0) and (min-resolution: .001dpcm) {
+  /* Prevent text selection on touch */
+  .no-select {
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+}
+
+/* Loading states for mobile */
+.skeleton-mobile {
+  @apply animate-pulse bg-gray-200 rounded;
+}
+
+/* Pull-to-refresh indicator */
+.pull-to-refresh {
+  @apply flex items-center justify-center h-12 text-gray-600;
+}
+
+/* Mobile navigation patterns */
+.mobile-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-white border-t;
+  z-index: 50;
+}
+
+.mobile-nav-item {
+  @apply flex flex-col items-center py-2 px-3 text-xs;
+}
+
+/* Mobile sheet/slide-up patterns */
+.mobile-sheet {
+  @apply fixed bottom-0 left-0 right-0 bg-white rounded-t-lg shadow-lg;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Mobile safe areas */
+.safe-area-inset-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.safe-area-inset-top {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Mobile gestures */
+.swipeable {
+  touch-action: pan-x;
+}
+
+.scrollable {
+  -webkit-overflow-scrolling: touch;
+  overflow-scrolling: touch;
+}
+
+/* Mobile optimizations */
+.optimize-mobile {
+  /* Reduce motion for better performance */
+  @apply will-change-transform;
+}
+
+/* Mobile-first animations */
+@media (prefers-reduced-motion: reduce) {
+  .animate-mobile {
+    animation: none;
+  }
+}
