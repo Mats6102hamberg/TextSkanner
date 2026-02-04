@@ -16,7 +16,10 @@ import { processLanguage, type LanguageMode } from "@/services/apiClient";
 const MODES: { label: string; description: string; mode: LanguageMode }[] = [
   { label: "Klarspråk", description: "Gör texten enklare", mode: "simplify" },
   { label: "Sammanfatta", description: "Plocka ut det viktigaste", mode: "summarize" },
-  { label: "Översätt till engelska", description: "Naturlig engelsk ton", mode: "translate_en" }
+  { label: "Översätt till engelska", description: "Naturlig engelsk ton", mode: "translate_en" },
+  { label: "Översätt till tyska", description: "Naturlig tysk ton", mode: "translate_de" },
+  { label: "Översätt till franska", description: "Naturlig fransk ton", mode: "translate_fr" },
+  { label: "Översätt till spanska", description: "Naturlig spansk ton", mode: "translate_es" }
 ];
 
 export default function SprakPage() {

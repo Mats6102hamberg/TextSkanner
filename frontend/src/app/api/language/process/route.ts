@@ -16,9 +16,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    if (!mode || !["simplify", "summarize", "translate_en"].includes(mode)) {
+    if (!mode || !["simplify", "summarize", "translate_en", "translate_de", "translate_fr", "translate_es"].includes(mode)) {
       return NextResponse.json(
-        { error: "Ogiltigt mode. Använd 'simplify', 'summarize' eller 'translate_en'." },
+        { error: "Ogiltigt mode. Använd 'simplify', 'summarize', 'translate_en', 'translate_de', 'translate_fr' eller 'translate_es'." },
         { status: 400 }
       );
     }
@@ -50,11 +50,26 @@ export async function POST(req: NextRequest) {
         systemMessage = "Du är en professionell översättare. Översätt följande svenska text till naturlig, korrekt engelska. Behåll ton och innebörd. Svara endast med den översatta engelska texten.";
         prompt = `Översätt följande text till engelska:\n\n${text}`;
         break;
+
+      case "translate_de":
+        systemMessage = "Du är en professionell översättare. Översätt följande svenska text till naturlig, korrekt tyska. Behåll ton och innebörd. Svara endast med den översatta tyska texten.";
+        prompt = `Översätt följande text till tyska:\n\n${text}`;
+        break;
+
+      case "translate_fr":
+        systemMessage = "Du är en professionell översättare. Översätt följande svenska text till naturlig, korrekt franska. Behåll ton och innebörd. Svara endast med den översatta franska texten.";
+        prompt = `Översätt följande text till franska:\n\n${text}`;
+        break;
+
+      case "translate_es":
+        systemMessage = "Du är en professionell översättare. Översätt följande svenska text till naturlig, korrekt spanska. Behåll ton och innebörd. Svara endast med den översatta spanska texten.";
+        prompt = `Översätt följande text till spanska:\n\n${text}`;
+        break;
     }
 
     const response = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      temperature: mode === "translate_en" ? 0.2 : 0.3,
+      temperature: mode.startsWith("translate_") ? 0.2 : 0.3,
       messages: [
         {
           role: "system",

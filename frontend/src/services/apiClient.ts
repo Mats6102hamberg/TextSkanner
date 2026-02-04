@@ -5,7 +5,7 @@ import type {
 
 const BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "";
 
-export type LanguageMode = "simplify" | "summarize" | "translate_en";
+export type LanguageMode = "simplify" | "summarize" | "translate_en" | "translate_de" | "translate_fr" | "translate_es";
 
 async function handleResponse(res: Response) {
   if (!res.ok) {
