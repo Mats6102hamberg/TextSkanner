@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { maskSensitiveData } from "@/lib/maskSensitiveData";
 import { runOcrOnBuffer } from "../ocr/route-helpers";
+import { withRateLimit } from "@/lib/rateLimitMiddleware";
 
 export const runtime = "nodejs";
 
@@ -19,7 +20,7 @@ type MaskingErrorResponse = {
 
 type MaskingResponse = MaskingSuccessResponse | MaskingErrorResponse;
 
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(async (req: NextRequest) => {
   try {
     const contentType = req.headers.get("content-type") ?? "";
 

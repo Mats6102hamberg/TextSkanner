@@ -10,7 +10,9 @@
     "postinstall": "prisma generate"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.25",
     "@prisma/client": "^6.19.0",
+    "ai": "^6.0.70",
     "canvas": "^3.2.0",
     "iconv-lite": "^0.7.0",
     "jspdf": "^3.0.3",

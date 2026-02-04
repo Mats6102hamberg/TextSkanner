@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient, Prisma } from "@prisma/client";
+import { withRateLimit } from "@/lib/rateLimitMiddleware";
 
 const prisma = new PrismaClient();
 
-export async function GET() {
+export const GET = withRateLimit(async (req: NextRequest) => {
   try {
     const entries = await prisma.diaryEntry.findMany({
       orderBy: { createdAt: "desc" }
@@ -17,9 +18,9 @@ export async function GET() {
       { status: 500 }
     );
   }
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = withRateLimit(async (req: NextRequest) => {
   try {
     const body = await req.json();
     const originalText = typeof body.originalText === "string" ? body.originalText.trim() : "";
@@ -48,9 +49,9 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
-export async function DELETE(req: NextRequest) {
+export const DELETE = withRateLimit(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const id = searchParams.get("id");
 
@@ -84,4 +85,4 @@ export async function DELETE(req: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
