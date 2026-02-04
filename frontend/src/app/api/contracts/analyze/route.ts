@@ -10,57 +10,87 @@ export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   try {
-    const formData = await req.formData();
-    const fileEntry = formData.get("file");
-    const mode = typeof formData.get("mode") === "string" ? String(formData.get("mode")) : "quick";
-    const saveMode =
-      typeof formData.get("saveMode") === "string" ? String(formData.get("saveMode")) : "temp";
+    const contentType = req.headers.get("content-type") || "";
+    
+    let rawText: string;
+    let mode = "quick";
+    let saveMode = "temp";
+    let fileName = "contract.txt";
 
-    if (!(fileEntry instanceof Blob)) {
-      return NextResponse.json(
-        { ok: false, error: "Ingen fil mottagen i fältet 'file'." },
-        { status: 400 }
-      );
-    }
-    const file = fileEntry as File;
-    const fileName = (file as { name?: string }).name ?? "uploaded.pdf";
-    const contentType = file.type || "application/octet-stream";
-
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    let rawText: string | null = null;
-    if (contentType.startsWith("image/")) {
-      // Bilder → OCR
-      rawText = await runOcrOnBuffer(buffer, contentType, "auto");
-    } else if (contentType === "application/pdf") {
-      // PDF → pdf-parse
-      rawText = await extractTextFromPdf(buffer);
-    } else if (contentType === "text/plain") {
-      // Ren textfil → läs som UTF-8
-      rawText = buffer.toString("utf8");
-    } else {
-      return NextResponse.json(
-        { ok: false, error: `Unsupported MIME type: ${contentType}` },
-        { status: 400 }
-      );
-    }
-
-    if (!rawText?.trim()) {
-      if (contentType === "application/pdf") {
+    // Handle JSON input (raw text)
+    if (contentType.includes("application/json")) {
+      const body = await req.json();
+      rawText = body.rawText || body.text || "";
+      mode = body.mode || "quick";
+      saveMode = body.saveMode || "temp";
+      
+      if (!rawText?.trim()) {
         return NextResponse.json(
-          {
-            ok: false,
-            error:
-              "Kunde inte läsa text från PDF:en. Kontrollera kvaliteten eller testa en annan fil."
-          },
-          { status: 200 }
+          { ok: false, error: "Ingen avtalstext mottagen. Skicka 'rawText' eller 'text' i JSON." },
+          { status: 400 }
+        );
+      }
+    } 
+    // Handle multipart/form-data (file upload)
+    else if (contentType.includes("multipart/form-data")) {
+      const formData = await req.formData();
+      const fileEntry = formData.get("file");
+      mode = typeof formData.get("mode") === "string" ? String(formData.get("mode")) : "quick";
+      saveMode = typeof formData.get("saveMode") === "string" ? String(formData.get("saveMode")) : "temp";
+
+      if (!(fileEntry instanceof Blob)) {
+        return NextResponse.json(
+          { ok: false, error: "Ingen fil mottagen i fältet 'file'." },
+          { status: 400 }
+        );
+      }
+      const file = fileEntry as File;
+      fileName = (file as { name?: string }).name ?? "uploaded.pdf";
+      const mimeType = file.type || "application/octet-stream";
+
+      const arrayBuffer = await file.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+
+      let extractedText: string | null = null;
+      if (mimeType.startsWith("image/")) {
+        // Bilder → OCR
+        extractedText = await runOcrOnBuffer(buffer, mimeType, "auto");
+      } else if (mimeType === "application/pdf") {
+        // PDF → pdf-parse
+        extractedText = await extractTextFromPdf(buffer);
+      } else if (mimeType === "text/plain") {
+        // Ren textfil → läs som UTF-8
+        extractedText = buffer.toString("utf8");
+      } else {
+        return NextResponse.json(
+          { ok: false, error: `Unsupported MIME type: ${mimeType}` },
+          { status: 400 }
         );
       }
 
+      if (!extractedText?.trim()) {
+        if (mimeType === "application/pdf") {
+          return NextResponse.json(
+            {
+              ok: false,
+              error: "Kunde inte läsa text från PDF:en. Kontrollera kvaliteten eller testa en annan fil."
+            },
+            { status: 200 }
+          );
+        }
+
+        return NextResponse.json(
+          { ok: false, error: "Kunde inte läsa text från filen. Kontrollera kvaliteten och försök igen." },
+          { status: 422 }
+        );
+      }
+      
+      rawText = extractedText;
+    } 
+    else {
       return NextResponse.json(
-        { ok: false, error: "Kunde inte läsa text från filen. Kontrollera kvaliteten och försök igen." },
-        { status: 422 }
+        { ok: false, error: "Content-Type måste vara 'application/json' eller 'multipart/form-data'." },
+        { status: 400 }
       );
     }
 
