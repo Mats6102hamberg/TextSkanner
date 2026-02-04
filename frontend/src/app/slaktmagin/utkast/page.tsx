@@ -41,6 +41,30 @@ export default function SlaktmaginUtkastPage() {
     setLoading(false);
   }
 
+  function exportAsJSON(draft: FamilyEntityDraft) {
+    const exportData = {
+      id: draft.id,
+      createdAt: draft.createdAt,
+      sourceEntryIds: draft.sourceEntryIds,
+      entities: draft.entities,
+      exportInfo: {
+        exportedAt: new Date().toISOString(),
+        exportedBy: "Släktmagin",
+        version: "1.0"
+      }
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = `slaktmagin-${new Date(draft.createdAt).toISOString().split('T')[0]}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  }
+
   return (
     <PageShell
       title="Släktmagin - Utkast"
@@ -117,6 +141,9 @@ export default function SlaktmaginUtkastPage() {
               <div className="flex gap-3 pt-4">
                 <Button onClick={() => setSelectedDraft(null)} variant="primary">
                   Stäng
+                </Button>
+                <Button onClick={() => exportAsJSON(selectedDraft)} variant="secondary">
+                  📄 Exportera JSON
                 </Button>
               </div>
             </CardContent>

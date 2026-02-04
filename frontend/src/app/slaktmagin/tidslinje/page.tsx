@@ -75,6 +75,66 @@ export default function SlaktmaginTidslinjePagePage() {
     return { text: text.substring(0, maxLength) + "...", isTruncated: true };
   }
 
+  function exportTimelineAsJSON() {
+    const exportData = {
+      title: "Släktmagin Tidslinje",
+      exportedAt: new Date().toISOString(),
+      exportedBy: "Släktmagin",
+      version: "1.0",
+      timelineItems: timelineItems.map(item => ({
+        date: item.date,
+        dateText: item.dateText,
+        title: item.title,
+        place: item.place,
+        persons: item.persons,
+        confidence: item.confidence,
+        sourceEntryIds: item.sourceEntryIds
+      })),
+      statistics: {
+        totalItems: timelineItems.length,
+        totalPersons: [...new Set(timelineItems.flatMap(item => item.persons))].length,
+        totalPlaces: [...new Set(timelineItems.map(item => item.place).filter(Boolean))].length,
+        dateRange: {
+          earliest: timelineItems.find(item => item.date)?.date,
+          latest: timelineItems.map(item => item.date).filter(Boolean).pop()
+        }
+      }
+    };
+
+    const dataStr = JSON.stringify(exportData, null, 2);
+    const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+
+    const exportFileDefaultName = `slaktmagin-tidslinje-${new Date().toISOString().split('T')[0]}.json`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  }
+
+  function exportTimelineAsCSV() {
+    const headers = ['Datum', 'Händelse', 'Plats', 'Personer', 'Säkerhet'];
+    const rows = timelineItems.map(item => [
+      item.date || item.dateText || '',
+      item.title || '',
+      item.place || '',
+      item.persons.join(', ') || '',
+      item.confidence ? `${(item.confidence * 100).toFixed(0)}%` : ''
+    ]);
+
+    const csvContent = [headers, ...rows]
+      .map(row => row.map(cell => `"${cell}"`).join(','))
+      .join('\n');
+
+    const dataUri = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csvContent);
+    const exportFileDefaultName = `slaktmagin-tidslinje-${new Date().toISOString().split('T')[0]}.csv`;
+
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileDefaultName);
+    linkElement.click();
+  }
+
   // Transformera drafts till timeline items
   const timelineItems = useMemo(() => {
     const items: TimelineItem[] = [];
@@ -380,7 +440,6 @@ export default function SlaktmaginTidslinjePagePage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -389,7 +448,6 @@ export default function SlaktmaginTidslinjePagePage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
@@ -398,13 +456,17 @@ export default function SlaktmaginTidslinjePagePage() {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="pt-6">
             <div className="text-center">
-              <Button onClick={() => router.push("/slaktmagin/utkast")} size="md" variant="secondary">
-                ← Tillbaka till Utkast
-              </Button>
+              <div className="flex flex-col gap-2">
+                <Button onClick={exportTimelineAsJSON} variant="secondary" size="sm" className="w-full">
+                  📄 JSON
+                </Button>
+                <Button onClick={exportTimelineAsCSV} variant="secondary" size="sm" className="w-full">
+                  📊 CSV
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>
