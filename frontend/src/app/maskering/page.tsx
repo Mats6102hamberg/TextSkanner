@@ -1,7 +1,9 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import Link from "next/link";
 
+import { PageShell } from "@/components/layout/PageShell";
 import {
   maskFile,
   maskText,
@@ -54,17 +56,37 @@ export default function MaskeringPage() {
   }
 
   return (
-    <section className="mx-auto mt-10 max-w-5xl rounded-3xl border border-black/5 bg-white p-6 shadow-xl sm:p-8">
-      <header className="space-y-2">
-        <p className="text-xs font-semibold uppercase tracking-wide text-indigo-500">
-          Textskanner · Maskeringsverktyg
-        </p>
-        <h1 className="text-2xl font-semibold text-gray-900">Maskera känslig information</h1>
-        <p className="text-sm text-gray-600">
-          Klistra in text eller ladda upp en fil så maskerar TextSkanner personnummer, adresser, kontaktuppgifter
-          och andra känsliga detaljer innan du delar dokumentet vidare.
-        </p>
-      </header>
+    <PageShell fullWidth>
+      {/* Hero Section */}
+      <section className="bg-[#EAF5FF] py-10 sm:py-14">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#4F46E5]">
+              Textscanner
+            </p>
+            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              <span className="bg-gradient-to-r from-[#4F46E5] to-[#0EA5E9] bg-clip-text text-transparent">
+                Maskeringsverktyget
+              </span>
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600">
+              Maskera personnummer, adresser, kontaktuppgifter och andra känsliga detaljer innan du delar dokument vidare.
+            </p>
+            <div className="mt-6">
+              <Link
+                href="/"
+                className="inline-flex items-center rounded-xl border border-[#4F46E5] bg-white px-4 py-2 text-sm font-semibold text-[#4F46E5] shadow-sm hover:bg-[#EEF2FF]"
+              >
+                ← Tillbaka till startsidan
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <div className="mx-auto max-w-6xl px-4 py-10">
+    <section className="mx-auto max-w-5xl rounded-3xl border border-black/5 bg-white p-6 shadow-xl sm:p-8">
 
       <div className="mt-6 flex gap-2">
         {(["text", "file"] as MaskMode[]).map((value) => (
@@ -168,5 +190,7 @@ export default function MaskeringPage() {
         </div>
       )}
     </section>
+      </div>
+    </PageShell>
   );
 }

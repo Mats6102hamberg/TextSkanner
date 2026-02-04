@@ -73,6 +73,11 @@ export default function DagbokPage() {
   const [isEditing, setIsEditing] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [saveMessage, setSaveMessage] = useState<string | null>(null);
+  const [savedEntryId, setSavedEntryId] = useState<string | null>(null);
+  const [isCreatingChapter, setIsCreatingChapter] = useState(false);
+  const [chapterMessage, setChapterMessage] = useState<string | null>(null);
+  const [isExtractingEntities, setIsExtractingEntities] = useState(false);
+  const [entitiesMessage, setEntitiesMessage] = useState<string | null>(null);
 
   const hasOriginalText = Boolean(originalText.trim());
   const hasClarifiedText = Boolean(clarifiedText.trim());
@@ -254,13 +259,82 @@ export default function DagbokPage() {
         return;
       }
 
+      setSavedEntryId(response.id ?? null);
       setSaveMessage("✅ Dagboksinlägg sparat!");
-      setTimeout(() => setSaveMessage(null), 3000);
+      setChapterMessage(null);
+      setEntitiesMessage(null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Ett oväntat fel uppstod.";
       setErrorMessage(message);
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleCreateChapter() {
+    if (!savedEntryId) {
+      setErrorMessage("Spara dagboksinlägget först innan du skapar ett kapitel.");
+      return;
+    }
+
+    try {
+      setIsCreatingChapter(true);
+      setChapterMessage(null);
+      setErrorMessage(null);
+
+      const response = await fetch("/api/memorybook/createChapter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryIds: [savedEntryId] })
+      });
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        setErrorMessage(data.error || "Kunde inte skapa kapitel.");
+        return;
+      }
+
+      setChapterMessage(`📖 Kapitel skapat: "${data.preview?.title || 'Nytt kapitel'}"`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Ett oväntat fel uppstod.";
+      setErrorMessage(message);
+    } finally {
+      setIsCreatingChapter(false);
+    }
+  }
+
+  async function handleExtractEntities() {
+    if (!savedEntryId) {
+      setErrorMessage("Spara dagboksinlägget först innan du extraherar släktdata.");
+      return;
+    }
+
+    try {
+      setIsExtractingEntities(true);
+      setEntitiesMessage(null);
+      setErrorMessage(null);
+
+      const response = await fetch("/api/family/extractEntities", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ entryIds: [savedEntryId] })
+      });
+
+      const data = await response.json();
+
+      if (!data.ok) {
+        setErrorMessage(data.error || "Kunde inte extrahera entiteter.");
+        return;
+      }
+
+      const entityCount = data.entities?.length || 0;
+      setEntitiesMessage(`🌳 ${entityCount} entiteter extraherade och sparade till Släktmagin!`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Ett oväntat fel uppstod.";
+      setErrorMessage(message);
+    } finally {
+      setIsExtractingEntities(false);
     }
   }
 
@@ -308,16 +382,39 @@ export default function DagbokPage() {
   const router = useRouter();
 
   return (
-    <PageShell
-      title="Dagboksskanner"
-      subtitle="Samla, strukturera och förstå dina dagbokstexter över tid. Perfekt för reflektion, personlig utveckling eller livsberättelser."
-    >
-      {/* Snabblänkar */}
-      <div className="mb-6 flex gap-3">
-        <Button onClick={() => router.push("/dagbok/historik")} variant="secondary" size="sm">
-          📚 Visa historik
-        </Button>
-      </div>
+    <PageShell fullWidth>
+      {/* Hero Section */}
+      <section className="bg-[#EAF5FF] py-10 sm:py-14">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#4F46E5]">
+              Textscanner
+            </p>
+            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              <span className="bg-gradient-to-r from-[#4F46E5] to-[#0EA5E9] bg-clip-text text-transparent">
+                Dagboksscannern
+              </span>
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600">
+              Dagboksscannern har en mängd funktioner. Hit hör Minnesböcker och SläktMagi.
+            </p>
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+              <Button onClick={() => router.push("/dagbok/historik")} variant="secondary" size="sm">
+                📚 Visa historik
+              </Button>
+              <Button onClick={() => router.push("/minnesbok")} variant="secondary" size="sm">
+                📖 Minnesböcker
+              </Button>
+              <Button onClick={() => router.push("/slaktmagin")} variant="secondary" size="sm">
+                🌳 SläktMagi
+              </Button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <div className="mx-auto max-w-6xl px-4 py-10">
       <section className="grid gap-8 md:grid-cols-[1.3fr,0.7fr]">
         <Card>
           <CardHeader>
@@ -688,6 +785,7 @@ export default function DagbokPage() {
           )}
         </div>
       </section>
+      </div>
     </PageShell>
   );
 }

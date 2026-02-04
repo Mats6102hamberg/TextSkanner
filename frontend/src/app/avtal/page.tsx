@@ -179,18 +179,32 @@ export default function AvtalPage() {
   }
 
   return (
-    <PageShell
-      title="Avtalskollen"
-      subtitle="Ladda upp ett avtal eller dokument och få risknivåer, sammanfattningar och rekommendationer som är enkla att dela."
-    >
-      <section className="bg-gray-50 py-10 sm:py-12">
+    <PageShell fullWidth>
+      {/* Hero Section */}
+      <section className="bg-[#EAF5FF] py-10 sm:py-14">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#4F46E5]">
+              Textscanner
+            </p>
+            <h1 className="mt-4 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+              <span className="bg-gradient-to-r from-[#4F46E5] to-[#0EA5E9] bg-clip-text text-transparent">
+                Avtalsscannern
+              </span>
+            </h1>
+            <p className="mx-auto mt-4 max-w-2xl text-base text-slate-600">
+              Tolkar avtal och försäkringar, visar vilken text du ska se upp med, kan hantera flera språk och gör avtalet begripligt.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Main Content */}
+      <section className="bg-slate-50 py-10 sm:py-12">
         <div className="mx-auto max-w-6xl space-y-10 px-4">
           <div className="space-y-3 text-center">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-500">
-              Textscanner · Avtalsanalys
-            </p>
-            <h1 className="text-4xl font-bold text-gray-900">Få kontroll på avtalen på några minuter</h1>
-            <p className="text-lg text-gray-600">
+            <h2 className="text-2xl font-bold text-gray-900 sm:text-3xl">Få kontroll på avtalen på några minuter</h2>
+            <p className="text-base text-gray-600">
               Ladda upp PDF, text eller bilder, få en pedagogisk genomgång och dela tryggt till Prospero.
             </p>
           </div>
@@ -501,6 +515,31 @@ export default function AvtalPage() {
                   </p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Maskering Section */}
+      <section className="bg-white py-10 sm:py-12">
+        <div className="mx-auto max-w-6xl px-4">
+          <div className="rounded-3xl border border-slate-200 bg-gradient-to-br from-slate-50 to-white p-6 shadow-sm sm:p-8">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[#4F46E5]">
+                  Skydda känslig information
+                </p>
+                <h2 className="text-2xl font-bold text-slate-900">Maskeringsverktyget</h2>
+                <p className="max-w-xl text-sm text-slate-600">
+                  Innan du delar ett avtal vidare – maskera personnummer, adresser, kontaktuppgifter och andra känsliga detaljer automatiskt.
+                </p>
+              </div>
+              <a
+                href="/maskering"
+                className="inline-flex items-center justify-center rounded-xl bg-[#4F46E5] px-6 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-[#4338CA]"
+              >
+                Öppna Maskeringsverktyget →
+              </a>
             </div>
           </div>
         </div>

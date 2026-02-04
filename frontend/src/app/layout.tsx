@@ -4,8 +4,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Textskanner",
-  description: "Dagboksskanner, avtalsanalys och språkverktyg i samma plattform."
+  title: "Textscanner",
+  description: "Dagboksscannern, Avtalsscannern, SläktMagi och Minnesböcker i samma plattform."
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
