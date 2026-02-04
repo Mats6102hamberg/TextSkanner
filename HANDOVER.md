@@ -1,5 +1,16 @@
 # HANDOVER.md – TextScanner
 
+## SNABBREFERENS
+| Vad | Var |
+|-----|-----|
+| **Lokal path** | `/Users/admin/TextSkanner` |
+| **GitHub** | https://github.com/Mats6102hamberg/TextSkanner |
+| **Vercel Live** | https://text-skanner.vercel.app/ |
+| **Vercel Dashboard** | https://vercel.com/mats-hambergs-projects/text-skanner |
+| **Vercel Projekt** | `text-skanner` (ägare: mats-hambergs-projects) |
+
+---
+
 ## Snabbstart för ny utvecklare/AI
 
 ### 1. Projektstruktur
