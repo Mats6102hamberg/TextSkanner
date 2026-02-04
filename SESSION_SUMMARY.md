@@ -127,5 +127,32 @@ stripe listen --forward-to localhost:4000/api/stripe/webhook
 - Databasmodeller klara
 - Stripe webhook implementerad
 - PII-maskering fungerar
+- **Vercel deployment fungerar** (fixat 2026-02-04)
+
+## Vercel Deployment Fix (2026-02-04)
+
+### Problem
+Sidan visade 404 på Vercel trots att bygget lyckades.
+
+### Orsaker
+1. **Saknade miljövariabler** i Vercel (OPENAI_API_KEY, DATABASE_URL)
+2. **Root Directory** var inte konfigurerat till `frontend`
+
+### Lösning
+1. Lade till miljövariabler via Vercel CLI:
+   ```bash
+   vercel env add OPENAI_API_KEY production
+   vercel env add DATABASE_URL production
+   ```
+2. Konfigurerade Root Directory i Vercel Dashboard:
+   - Settings → General → Root Directory → `frontend`
+3. La till `frontend/src/app/not-found.tsx` för bättre 404-hantering
+4. Flyttade `vercel.json` till `frontend/`
+
+### Vercel-inställningar
+- **Root Directory:** `frontend`
+- **Framework:** Next.js (auto-detected)
+- **Build Command:** `next build`
+- **Environment Variables:** OPENAI_API_KEY, DATABASE_URL
 
 Senast uppdaterad: 2026-02-04

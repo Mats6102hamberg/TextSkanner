@@ -101,7 +101,33 @@ npm run build        # i frontend eller backend
 3. Ingen auth ännu
 4. Släktträdet är ej interaktivt
 
-### 8. Kontakt/GitHub
+### 8. Vercel Deployment
+
+**Live URL:** https://text-skanner.vercel.app/
+
+**Viktigt vid deploy-problem:**
+1. Kontrollera att miljövariabler finns i Vercel Dashboard:
+   - `OPENAI_API_KEY`
+   - `DATABASE_URL`
+2. Kontrollera att **Root Directory** är satt till `frontend` i Settings → General
+3. Vid 404: Trigga **Redeploy** med "Clear build cache"
+
+**Vercel CLI kommandon:**
+```bash
+# Länka projekt
+cd /Users/admin/TextSkanner && vercel link --project text-skanner
+
+# Lista miljövariabler
+vercel env ls
+
+# Lägg till miljövariabel
+vercel env add VARIABELNAMN production
+
+# Deploy med rensat cache
+cd frontend && vercel --prod --force --yes
+```
+
+### 9. Kontakt/GitHub
 
 - **Repo:** https://github.com/Mats6102hamberg/TextSkanner
 - **Ägare:** Mats Hamberg (@Mats6102hamberg)
@@ -109,3 +135,4 @@ npm run build        # i frontend eller backend
 
 ---
 Skapad: 2026-02-04
+Uppdaterad: 2026-02-04 (Vercel deployment fix)
